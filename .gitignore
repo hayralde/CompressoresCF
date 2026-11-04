@@ -1,0 +1,8 @@
+# publica somente os arquivos do site
+*
+!.gitignore
+!index.html
+!app.js
+!data.js
+!style.css
+!.nojekyll
