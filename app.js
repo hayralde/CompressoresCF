@@ -247,7 +247,7 @@
           if (s.id === "B" && sim.data8000) extra = " · previsto " + br(sim.data8000);
         } else {
           var dtf = svcDate(s.id, c.id), feito = M.feitos.indexOf(s.id + ":" + c.id) >= 0;
-          st = dtf ? '<span class="chip on">feito em ' + br(parse(dtf)) + '</span>' : feito ? '<span class="chip on">feito · informar a data</span>' : '<span class="chip warn">passou das ' + fmtN(s.horas) + ' h</span>';
+          st = dtf ? '<span class="chip on">feito em ' + br(parse(dtf)) + '</span>' : feito ? '<span class="chip on">feito no prazo</span>' : '<span class="chip warn">passou das ' + fmtN(s.horas) + ' h</span>';
           if (!dtf && !feito) sem = true;
         }
         if (s.tempo) {
