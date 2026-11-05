@@ -115,9 +115,11 @@
   function rotLast(t, c) {
     if (t.tipo === "leitura") { var l = last(c); return l ? parse(l.data) : parse(D.inicioPlano); }
     var v = S.exec[t.id + ":" + c.id];
-    return v ? parse(v) : parse(D.inicioPlano);
+    return v ? parse(v) : null;
   }
-  function rotDue(t, c) { return addDays(rotLast(t, c), t.dias); }
+  // sem execução registrada: não dá para afirmar que está em dia, então vence hoje
+  function rotDue(t, c) { var l = rotLast(t, c); return l ? addDays(l, t.dias) : today; }
+  function rotSem(t) { return t.tipo !== "leitura" && ativos().some(function (c) { return !rotLast(t, c); }); }
 
   /* lista única de ações, em ordem de data */
   function agenda() {
@@ -166,7 +168,7 @@
       if (!min || diff(min, today) > 45) return;
       var ids = cs.filter(function (c) { return diff(due[c.id], min) <= 0; }).map(function (c) { return c.id; });
       out.push({ k: "rot", when: min, lbl: "Até", what: t.acao, ids: ids, who: t.resp, link: "#plano",
-        why: t.per + ". Registro: " + t.reg + ".",
+        why: t.per + ". Registro: " + t.reg + "." + (rotSem(t) ? " Sem execução registrada: se já foi feito, marque Feito para começar a contar daqui." : ""),
         act: t.tipo === "leitura" ? { t: "link", href: "#ferramentas", label: "Lançar leitura" } : { t: "rot", keys: ids.map(function (id) { return t.id + ":" + id; }) } });
     });
     // 5) próxima troca do rodízio
@@ -274,9 +276,9 @@
       if (t.rastrear !== false) {
         var min = null;
         ativos().forEach(function (c) { var d = rotDue(t, c); if (!min || d < min) min = d; });
-        var dd = diff(min, today); total++; if (dd >= 0) emDia++;
-        prox = br(min);
-        chip = dd < 0 ? '<span class="chip bad">ATRASADA</span>' : dd <= 7 ? '<span class="chip warn">' + dTxt(dd) + '</span>' : '<span class="chip on">EM DIA</span>';
+        var dd = diff(min, today), semR = rotSem(t); total++; if (dd >= 0 && !semR) emDia++;
+        prox = semR ? "—" : br(min);
+        chip = semR ? '<span class="chip warn">SEM REGISTRO</span>' : dd < 0 ? '<span class="chip bad">ATRASADA</span>' : dd <= 7 ? '<span class="chip warn">' + dTxt(dd) + '</span>' : '<span class="chip on">EM DIA</span>';
       }
       return '<div class="pmr"><span class="n"><b>' + esc(t.nome) + '</b><small>' + esc(t.acao) + '</small></span><span><i>Frequência</i>' + esc(t.per) + '</span><span><i>Responsável</i>' + esc(t.resp) + '</span><span><i>Próxima</i>' + prox + '</span><span class="st">' + chip + '</span><small class="fo">Fonte: ' + esc(t.fonte) + '</small></div>';
     }).join("");
@@ -293,7 +295,7 @@
 
   function renderBadges() {
     var atr = PLANO_ST.total - PLANO_ST.emDia;
-    $("#bPlano").textContent = atr > 0 ? atr + " atrasada" + (atr > 1 ? "s" : "") : "rotinas em dia";
+    $("#bPlano").textContent = atr > 0 ? atr + " a regularizar" : "rotinas em dia";
     $("#bPlano").className = "bdg" + (atr > 0 ? " bad" : "");
     var np = D.pecas.filter(function (q) { return q.itens.some(function (i) { return !i.garantia; }) && !pecaSt(q.id, "ins").done; }).length;
     $("#bPecas").textContent = np ? np + " pendente" + (np > 1 ? "s" : "") : "concluídas";

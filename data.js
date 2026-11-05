@@ -89,7 +89,7 @@ window.DATA = {
   },
 
   // ============ PMOC: rotinas de operação e controle ============
-  // "dias" = periodicidade. A contagem começa em inicioPlano.
+  // "dias" = periodicidade. A contagem começa na primeira execução marcada como "Feito" (sem registro = sem data).
   // fonte "Manual" = vem do manual; "Plano" = definição do PCM (ajustável).
   inicioPlano: "2026-11-04",
   responsavelPlano: "PCM",
@@ -100,7 +100,7 @@ window.DATA = {
     { id: "tri", nome: "Resfriadores e filtros", acao: "Limpar resfriadores, inspecionar o elemento do filtro de ar e os filtros do compartimento elétrico", dias: 90, per: "Trimestral", resp: "Manutenção", reg: "Estado dos elementos (OK ou trocar)", fonte: "Manual 6.1 (mais frequente se houver poeira)" },
     { id: "ud", rastrear: false, nome: "Elementos do filtro UD+", acao: "Trocar a cada 4.000 h, 12 meses ou perda de carga de 350 mbar. O manômetro não serve de indicador", dias: 365, per: "4.000 h / 12 meses", resp: "Supertec", reg: "Troca registrada no serviço", fonte: "Manual 6.10" },
     { id: "nr13", rastrear: false, nome: "Válvula de segurança e vaso de pressão", acao: "Teste da válvula só por pessoal autorizado; inspeções conforme o prontuário NR-13 (periodicidade a confirmar)", dias: 365, per: "Conforme NR-13", resp: "Manutenção", reg: "Laudo de inspeção", fonte: "Manual 6.9 e cap. 9 (NR-13)" },
-    { id: "laudo", nome: "Relatório técnico anual", acao: "Receber da Supertec o relatório técnico anual dos compressores", dias: 365, per: "Anual", resp: "Manutenção", reg: "Laudo arquivado", fonte: "Plano (PMOC)" }
+    { id: "laudo", rastrear: false, nome: "Relatório técnico anual", acao: "Receber da Supertec o relatório técnico anual dos compressores", dias: 365, per: "Anual", resp: "Manutenção", reg: "Laudo arquivado", fonte: "Plano (PMOC)" }
   ],
 
   compressores: [
