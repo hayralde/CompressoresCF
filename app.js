@@ -114,16 +114,24 @@
   /* rotinas PMOC: última execução e próximo vencimento */
   function rotLast(t, c) {
     if (t.tipo === "leitura") { var l = last(c); return l ? parse(l.data) : parse(D.inicioPlano); }
-    var v = S.exec[t.id + ":" + c.id];
+    var v = S.exec[t.id + ":" + c.id] || (D.execInicial || {})[t.id + ":" + c.id];
     return v ? parse(v) : null;
   }
+  function achDone(a) { return a.sit === "feito" || !!S.exec["ach:" + a.id]; }
+  function achCmp(a) { return a.cmp.split(","); }
   // sem execução registrada: não dá para afirmar que está em dia, então vence hoje
   function rotDue(t, c) { var l = rotLast(t, c); return l ? addDays(l, t.dias) : today; }
   function rotSem(t) { return t.tipo !== "leitura" && ativos().some(function (c) { return !rotLast(t, c); }); }
 
   /* lista única de ações, em ordem de data */
   function agenda() {
-    var out = [], ord = { peca: 0, c4: 1, etapa: 2, rot: 3, rod: 4 }, i;
+    var out = [], ord = { ach: 0, peca: 0, c4: 1, etapa: 2, rot: 3, rod: 4 }, i;
+    // 0) achados do relatório de 4000 h que ainda não têm proposta nem solução
+    (D.achados || []).forEach(function (a) {
+      if (!a.acao || achDone(a)) return;
+      out.push({ k: "ach", when: today, lbl: "Até", what: a.acao, ids: achCmp(a), who: a.resp, link: "#achados",
+        why: "Achado do relatório de junho: " + a.t + ".", act: { t: "ach", id: a.id } });
+    });
     // 1) peças pendentes (corretivas)
     var grp = {};
     D.pecas.forEach(function (q) {
@@ -236,7 +244,19 @@
   }
 
   /* ---------- cronograma: fabricante + PMOC ---------- */
-  function svcDate(sv, cid) { return S.exec["sv:" + sv + ":" + cid] || ""; }
+  function svcDate(sv, cid) { return S.exec["sv:" + sv + ":" + cid] || (D.manual.datas || {})[sv + ":" + cid] || ""; }
+  var SIT = { peca: ["Em proposta de peças", "off"], cotar: ["Falta cotação", "warn"], cliente: ["Ação da RRP", "warn"], feito: ["Resolvido", "on"] };
+  function renderAchados() {
+    var A = D.achados || [], aberto = 0;
+    $("#achadosBox").innerHTML = '<p class="muted">Relatórios Supertec da visita de 17 a 19/06/2026 (4000 h) e OS 2026/2789 e 2026/3689. O Serviço A foi executado nos três compressores e o módulo foi zerado.</p><div class="lst">' +
+      A.map(function (a) {
+        var feito = achDone(a), s = feito ? SIT.feito : SIT[a.sit];
+        if (!feito && a.acao) aberto++;
+        return '<div><span>' + tagsHtml(achCmp(a)) + ' ' + esc(a.t) + (a.ref ? ' <small>· ' + esc(a.ref) + '</small>' : '') + '</span><span class="chip ' + s[1] + '">' + (feito && a.sit !== "feito" ? "Feito" : s[0]) + '</span></div>';
+      }).join("") + '</div>';
+    $("#bAchados").textContent = aberto ? aberto + " sem solução" : "tudo encaminhado";
+    $("#bAchados").className = "bdg" + (aberto ? " bad" : "");
+  }
   function renderPlano() {
     var M = D.manual, sem = false;
     var cards = D.compressores.map(function (c, idx) {
@@ -524,6 +544,7 @@
     else if (a.t === "etapa") a.ids.forEach(function (x) { var p = x.split(":"); setEtapa(p[0], p[1], { done: true, date: d }); });
     else if (a.t === "rot") a.keys.forEach(function (k) { S.exec[k] = d; });
     else if (a.t === "rod") S.exec["rod:" + a.n] = d;
+    else if (a.t === "ach") S.exec["ach:" + a.id] = d;
     logAdd(it.what + " (" + it.ids.map(function (id) { return tagC(cmpById(id)); }).join(", ") + ")");
     save(); renderAll();
   }
@@ -537,7 +558,7 @@
   /* ---------- eventos ---------- */
   function renderAll() {
     INF = info();
-    renderHoje(); renderTopo(); renderEstado(); renderPlano(); renderPecas(); renderC4();
+    renderHoje(); renderTopo(); renderEstado(); renderPlano(); renderPecas(); renderAchados(); renderC4();
     renderTabs(); renderEtapas(); renderChart(); renderRod(); renderForm(); renderMsg(); renderHist(); renderBadges();
   }
 

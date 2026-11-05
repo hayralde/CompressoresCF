@@ -65,6 +65,10 @@ window.DATA = {
     fonte: "Manual Atlas Copco GA 75L/90/110 VSD+, seção 6.1 (págs. 75–78) e 6.10",
     // Serviços já feitos dentro do prazo (informado pelo PCM em 05/11/2026). A data exata é opcional.
     feitos: ["A:C1", "A:C2", "A:C3"],
+    // Fonte: relatórios Supertec "4 mil horas" (OS de campo 5223, 5224 e 5276), visita de 17 a 19/06/2026.
+    // Horas totais no dia da visita. "Zerar horas de serviço do módulo" consta como realizado.
+    datas: { "A:C1": "2026-06-19", "A:C2": "2026-06-19", "A:C3": "2026-06-19" },
+    horasNoServico: { C1: 2635, C2: 3335, C3: 5755 },
     servicos: [
       { id: "A", horas: 4000,  tempo: "1 ano" },
       { id: "B", horas: 8000,  tempo: "2 anos" },
@@ -92,6 +96,22 @@ window.DATA = {
   // "dias" = periodicidade. A contagem começa na primeira execução marcada como "Feito" (sem registro = sem data).
   // fonte "Manual" = vem do manual; "Plano" = definição do PCM (ajustável).
   inicioPlano: "2026-11-04",
+  // Execuções comprovadas pelos relatórios de 4000 h (limpeza dos resfriadores: "Realizado" em 19/06/2026 nos 3 compressores).
+  execInicial: { "tri:C1": "2026-06-19", "tri:C2": "2026-06-19", "tri:C3": "2026-06-19" },
+
+  // Achados do relatório de 4000 h (jun/2026) e das OS 2026/2789 e 2026/3689.
+  // sit: "peca" = já está numa proposta de peças · "cotar" = falta pedir cotação · "cliente" = ação da RRP · "feito" = resolvido
+  achados: [
+    { id: "c1sb", cmp: "C1", t: "Smartbox queimada e dreno automático do trocador de calor queimado", sit: "peca", ref: "proposta 962997" },
+    { id: "c2dj", cmp: "C2", t: "Disjuntor geral desarmava acima de 95% de rotação. A Supertec limitou a rotação máxima a 90% e recomendou trocar o disjuntor imediatamente", sit: "cliente", resp: "Elétrica", acao: "Trocar o disjuntor geral e devolver a rotação máxima a 100%" },
+    { id: "c2or", cmp: "C2", t: "Anel O-ring danificado na conexão da mangueira de descarga; vedado com silicone (provisório)", sit: "cotar", resp: "Supertec", acao: "Pedir o O-ring da mangueira de descarga do C2 e trocar" },
+    { id: "c3sp", cmp: "C3", t: "Defletor de óleo com emenda solta e trincas; chapa de inox solta dentro do reservatório pode ter danificado o filtro separador. Houve arraste de óleo. O defletor foi soldado pelo cliente. A Supertec recomendou trocar defletor e separador e usar o C3 em stand-by até a troca", sit: "cotar", resp: "Supertec", acao: "Pedir cotação do filtro separador e do defletor de óleo do C3" },
+    { id: "c3co", cmp: "C3", t: "Filtro coalescente saturado por causa do arraste de óleo", sit: "peca", ref: "proposta 962489 (kit UD430+)" },
+    { id: "c3dr", cmp: "C3", t: "Dreno automático do secador queimado", sit: "feito", ref: "trocado em 21/09/2026 (OS 2026/3689, garantia)" },
+    { id: "ar",   cmp: "C1,C2,C3", t: "Filtro de ar saturado (14/08 o técnico recomendou não operar o C3 até a troca)", sit: "peca", ref: "propostas 962997, 962998 e 962489" },
+    { id: "cub",  cmp: "C1,C2,C3", t: "Filtro do compartimento elétrico saturado em junho. O relatório não registra a troca", sit: "cotar", resp: "Supertec", acao: "Confirmar a troca do filtro do compartimento elétrico (item do Serviço A)" },
+    { id: "pod",  cmp: "C1,C2,C3", t: "Qualidade do ar aspirado: poluído, em todos. O manual manda encurtar as limpezas em ambiente com poeira", sit: "cliente", resp: "Manutenção" }
+  ],
   responsavelPlano: "PCM",
   tarefas: [
     { id: "dia", rastrear: false, nome: "Ronda diária", acao: "Conferir nível de óleo, leituras no visor e se o dreno de condensado descarrega", dias: 1, per: "Diária", resp: "Operação", reg: "Anotar anormalidades", fonte: "Manual 6.1" },
