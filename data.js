@@ -12,8 +12,8 @@ window.DATA = {
   // Fluxo da manutenção com empresa externa.
   // "dias" = quantos dias ANTES da data prevista de 8000 h cada etapa deve estar concluída.
   etapas: [
-    { id: "orc", nome: "Solicitar orçamento à empresa",      dias: 75, resp: "Manutenção",
-      dica: "Enviar horas atuais, tag e escopo da revisão de 8000 h. Pedir prazo de validade e de entrega de peças." },
+    { id: "orc", nome: "Pedir orçamento do Serviço B",      dias: 75, resp: "Manutenção",
+      dica: "Enviar horas atuais e tag. Escopo: Serviço B do manual (óleo, filtros, separador, válvulas). Pedir validade e prazo de peças." },
     { id: "rec", nome: "Receber e comparar orçamentos",      dias: 60, resp: "Manutenção",
       dica: "Conferir escopo, peças, mão de obra e prazo de mobilização." },
     { id: "apr", nome: "Aprovar o orçamento",                dias: 45, resp: "Gestor",
@@ -22,7 +22,7 @@ window.DATA = {
       dica: "Anotar o nº do pedido. Sem pedido liberado a empresa não mobiliza." },
     { id: "agd", nome: "Confirmar agenda com a empresa",     dias: 21, resp: "Manutenção",
       dica: "Alinhar data, equipe, permissão de trabalho e janela de parada do compressor." },
-    { id: "exe", nome: "Execução da manutenção (8000 h)",    dias: 0,  resp: "Empresa externa",
+    { id: "exe", nome: "Execução do Serviço B (8000 h)",    dias: 0,  resp: "Supertec",
       dica: "Acompanhar serviço, registrar peças trocadas e leitura do contador." },
     { id: "enc", nome: "Encerrar: laudo e novo ciclo",       dias: -5, resp: "Manutenção",
       dica: "Anexar relatório de serviço, dar baixa no pedido e reiniciar o plano do próximo ciclo." }
@@ -50,46 +50,90 @@ window.DATA = {
           garantia: true, nota: "Resolvido pela garantia da fábrica e instalado em 21/09/2026. Não entra no valor a pagar." } ] }
   ],
   etapasPeca: [
-    { id: "rev", nome: "Revalidar proposta (preço e validade)" },
-    { id: "apr", nome: "Aprovar orçamento" },
-    { id: "ped", nome: "Gerar pedido no Compras" },
-    { id: "rec", nome: "Receber as peças" },
-    { id: "ins", nome: "Instalar / aplicar no compressor" }
+    { id: "rev", nome: "Revalidar proposta (preço e validade)", acao: "Pedir à Supertec a revalidação das propostas de peças", resp: "Manutenção" },
+    { id: "apr", nome: "Aprovar orçamento", acao: "Aprovar as propostas de peças", resp: "Gestor" },
+    { id: "ped", nome: "Gerar pedido no Compras", acao: "Gerar o pedido das peças no Compras", resp: "Compras" },
+    { id: "rec", nome: "Receber as peças", acao: "Receber as peças da Supertec", resp: "Supertec" },
+    { id: "ins", nome: "Instalar / aplicar no compressor", acao: "Instalar as peças nos compressores", resp: "Supertec" }
+  ],
+
+  // ============ CRONOGRAMA DO FABRICANTE (Atlas Copco) ============
+  // Fonte: Manual de instruções GA 75L / 90 / 110 VSD+, seção 6.1 "Programa de manutenção preventiva"
+  // (págs. 75 a 78 do manual) e seção 6.10 (filtros UD+).
+  // Cada serviço vale pelo que ocorrer primeiro: horas de funcionamento OU tempo.
+  manual: {
+    fonte: "Manual Atlas Copco GA 75L/90/110 VSD+, seção 6.1 (págs. 75–78) e 6.10",
+    servicos: [
+      { id: "A", horas: 4000,  tempo: "1 ano" },
+      { id: "B", horas: 8000,  tempo: "2 anos" },
+      { id: "D", horas: 24000, tempo: "" }
+    ],
+    // A, B, D: 1 = faz parte do serviço. nota = rodapé do manual.
+    itens: [
+      { nome: "Verificar vazamentos de água",                       A: 1, B: 1, D: 1 },
+      { nome: "Trocar o filtro de ar",                              A: 1, B: 1, D: 1 },
+      { nome: "Trocar o material filtrante do compartimento elétrico", A: 1, B: 1, D: 1 },
+      { nome: "Trocar a rede do filtro dos drenos",                 A: 1, B: 1, D: 1 },
+      { nome: "Trocar o óleo",                                      A: 1, B: 1, D: 1, nota: "Com óleo Roto Xtend Duty, óleo e filtro de óleo passam a fazer parte só do serviço B." },
+      { nome: "Trocar o filtro de óleo",                            A: 1, B: 1, D: 1, nota: "Com óleo Roto Xtend Duty, óleo e filtro de óleo passam a fazer parte só do serviço B." },
+      { nome: "Trocar o elemento separador de óleo",                A: 0, B: 1, D: 1 },
+      { nome: "Inspecionar a válvula anti-retorno da linha de retorno", A: 0, B: 1, D: 1 },
+      { nome: "Inspecionar a válvula de pressão mínima",            A: 0, B: 1, D: 1 },
+      { nome: "Inspecionar a válvula termostática",                 A: 0, B: 1, D: 1 },
+      { nome: "Inspecionar os drenos de condensado",                A: 0, B: 1, D: 1 },
+      { nome: "Trocar o rolamento superior do motor",               A: 0, B: 0, D: 1, nota: "Se a pressão de trabalho for até 10 bar, a inspeção pode ir para 32.000 h." },
+      { nome: "Válvula de admissão",                                A: 0, B: 0, D: 1, nota: "Acima de 300.000 partidas/paradas, recomenda-se revisar a válvula de admissão e o bloco de solenoide." }
+    ]
+  },
+
+  // ============ PMOC: rotinas de operação e controle ============
+  // "dias" = periodicidade. A contagem começa em inicioPlano.
+  // fonte "Manual" = vem do manual; "Plano" = definição do PCM (ajustável).
+  inicioPlano: "2026-11-04",
+  responsavelPlano: "PCM",
+  tarefas: [
+    { id: "dia", rastrear: false, nome: "Ronda diária", acao: "Conferir nível de óleo, leituras no visor e se o dreno de condensado descarrega", dias: 1, per: "Diária", resp: "Operação", reg: "Anotar anormalidades", fonte: "Manual 6.1" },
+    { id: "leit", tipo: "leitura", nome: "Leitura do horímetro", acao: "Ler o horímetro e lançar no site", dias: 7, per: "Semanal", resp: "Operação", reg: "Horas, horas em carga e partidas", fonte: "Plano (base da projeção)" },
+    { id: "secad", nome: "Secador: condensador e dreno", acao: "Limpar o condensador do secador (aspirador e ar em baixa pressão) e testar o dreno", dias: 30, per: "Mensal", resp: "Manutenção", reg: "Limpeza feita, dreno OK", fonte: "Manual 6.1" },
+    { id: "tri", nome: "Resfriadores e filtros", acao: "Limpar resfriadores, inspecionar o elemento do filtro de ar e os filtros do compartimento elétrico", dias: 90, per: "Trimestral", resp: "Manutenção", reg: "Estado dos elementos (OK ou trocar)", fonte: "Manual 6.1 (mais frequente se houver poeira)" },
+    { id: "ud", rastrear: false, nome: "Elementos do filtro UD+", acao: "Trocar a cada 4.000 h, 12 meses ou perda de carga de 350 mbar. O manômetro não serve de indicador", dias: 365, per: "4.000 h / 12 meses", resp: "Supertec", reg: "Troca registrada no serviço", fonte: "Manual 6.10" },
+    { id: "nr13", rastrear: false, nome: "Válvula de segurança e vaso de pressão", acao: "Teste da válvula só por pessoal autorizado; inspeções conforme o prontuário NR-13 (periodicidade a confirmar)", dias: 365, per: "Conforme NR-13", resp: "Manutenção", reg: "Laudo de inspeção", fonte: "Manual 6.9 e cap. 9 (NR-13)" },
+    { id: "laudo", nome: "Relatório técnico anual", acao: "Receber da Supertec o relatório técnico anual dos compressores", dias: 365, per: "Anual", resp: "Manutenção", reg: "Laudo arquivado", fonte: "Plano (PMOC)" }
   ],
 
   compressores: [
-    { id: "C1", tag: "CPS-14Q001", cor: "#0f172a",
+    { id: "C1", tag: "CPS-14Q001", cor: "#0f172a", modelo: "GA110VSD+", serie: "BQR144249",
       leituras: [
         { data: "2026-10-14", horas: 5406 },
         { data: "2026-11-04", horas: 5904, carga: 5900, partidas: 340 }
       ] },
-    { id: "C2", tag: "CPS-14Q002", cor: "#2563eb",
+    { id: "C2", tag: "CPS-14Q002", cor: "#2563eb", modelo: "GA110VSD+", serie: "BQR144248",
       leituras: [
         { data: "2026-10-14", horas: 5651 },
         { data: "2026-11-04", horas: 6149, carga: 6148, partidas: 449 }
       ] },
-    { id: "C3", tag: "CPS-14Q003", cor: "#16a34a",
+    { id: "C3", tag: "CPS-14Q003", cor: "#16a34a", modelo: "GA110VSD+", serie: "BQR145196",
       leituras: [
         { data: "2026-10-14", horas: 6557 },
         { data: "2026-11-04", horas: 6579, carga: 6575, partidas: 713 }
       ] },
-    { id: "C4", tag: "CPS-14Q004", cor: "#d97706", novo: true,
+    { id: "C4", tag: "CPS-14Q004", cor: "#d97706", novo: true, modelo: "a confirmar", serie: "—",
       leituras: [] }   // equipamento novo: start-up incompleto, em stand-by (ver "c4" abaixo)
   ],
 
   // Situação do compressor 04 (fonte: grupo com o fornecedor, até 03/11/2026)
   c4: {
     status: "Stand-by · não operar como principal",
-    resumo: "Start-up em 22/09 parou: suporte do motor/elemento com 3 pés danificados e vazamento na mangueira de descarga. Garantia aprovada em 21/10. Em 29/10 foi montado com reparo paliativo e testado a 100% de carga sem falhas, mas o técnico recomendou NÃO usar como principal até trocar a mangueira original. A mangueira que a fábrica mandou veio errada; faturamento da correta previsto para 13/11. Fase II entra em operação no início de novembro.",
+    resumo: "Funciona com reparo provisório (testado a 100% em 29/10), mas não deve ser o principal até trocar a mangueira de descarga. A peça de garantia veio errada; a certa tem faturamento previsto em 13/11.",
     previsao: "2026-11-13",
     pendencias: [
-      { id: "mang",  nome: "Mangueira de descarga original (garantia)", nota: "Faturamento previsto em 13/11. A primeira enviada pela fábrica veio errada." },
-      { id: "supo",  nome: "Suporte do motor e elemento definitivo (garantia)", nota: "Hoje está com reparo paliativo (soldado)." },
-      { id: "inst",  nome: "Instalar mangueira original e prender o motor ao chassi", nota: "Com a mangueira provisória não foi possível fixar o motor." },
-      { id: "oleo",  nome: "Repor o óleo / lubrificação", nota: "Era o que faltava após o teste de 29/10." },
-      { id: "vlv",   nome: "Teste de válvulas para a Fase II", nota: "Pedido da coordenação." },
-      { id: "chk",   nome: "Checklist de start-up entregue à Engenharia", nota: "Exigência da coordenação para o compressor novo." },
-      { id: "lib",   nome: "Liberar para operação (retirar bloqueio) e lançar leitura", nota: "Chave do bloqueio está com a operação da casa de força." }
+      { id: "mang",  nome: "Receber a mangueira de descarga original (garantia)", resp: "Fábrica / Supertec", nota: "Faturamento previsto em 13/11. A primeira enviada pela fábrica veio errada." },
+      { id: "supo",  nome: "Receber o suporte do motor e elemento definitivo (garantia)", resp: "Fábrica / Supertec", nota: "Hoje está com reparo paliativo (soldado)." },
+      { id: "inst",  nome: "Instalar a mangueira original e prender o motor ao chassi", resp: "Supertec", nota: "Com a mangueira provisória não foi possível fixar o motor." },
+      { id: "oleo",  nome: "Repor o óleo / lubrificação", resp: "Supertec", nota: "Era o que faltava após o teste de 29/10." },
+      { id: "vlv",   nome: "Fazer o teste de válvulas para a Fase II", resp: "Supertec", nota: "Pedido da coordenação." },
+      { id: "chk",   nome: "Entregar o checklist de start-up à Engenharia", resp: "Supertec", nota: "Exigência da coordenação para o compressor novo." },
+      { id: "lib",   nome: "Liberar para operação (retirar bloqueio) e lançar leitura", resp: "Operação", nota: "Chave do bloqueio está com a operação da casa de força." }
     ],
     historico: [
       { d: "2026-09-21", t: "Dreno do secador do C3 trocado (garantia). C2 e C3 operando a 100%." },

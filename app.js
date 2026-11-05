@@ -6,7 +6,7 @@
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]; }); };
 
   /* ---------- estado salvo no navegador ---------- */
-  function blank() { return { leituras: {}, etapas: {}, c4: {}, pecas: {} }; }
+  function blank() { return { leituras: {}, etapas: {}, c4: {}, pecas: {}, exec: {}, log: [] }; }
   function load() {
     try { var o = JSON.parse(localStorage.getItem(KEY) || "{}"); return Object.assign(blank(), o); }
     catch (e) { return blank(); }
@@ -93,95 +93,217 @@
     return dd < 0 ? "atrasada " + (-dd) + " dias" : "em " + dd + " dias";
   }
 
-  /* ---------- render: resumo ---------- */
-  var INF = [];
+  /* ---------- topo: o quê, quando, quem ---------- */
+  var INF = [], AG = [];
   function renderHoje() {
     var dias = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
     $("#hoje").textContent = dias[today.getDay()] + ", " + br(today);
   }
+  function cmpById(id) { return D.compressores.filter(function (x) { return x.id === id; })[0]; }
+  function tagC(c) { return c.tag.replace("CPS-", ""); }
+  function ativos() { return D.compressores.filter(function (c) { return !c.novo || c4St("lib").done; }); }
+  function tagsHtml(ids) {
+    return ids.map(function (id) {
+      var c = cmpById(id);
+      return '<span class="badge"><i class="dot" style="--cc:var(--c' + (D.compressores.indexOf(c) + 1) + ')"></i><span class="tag">' + esc(tagC(c)) + '</span></span>';
+    }).join(" ");
+  }
+  function pagarQ(q) { return q.itens.reduce(function (a, i) { return a + (i.garantia ? 0 : i.valor * i.qtd); }, 0); }
+  function logAdd(txt) { S.log = S.log || []; S.log.unshift({ d: iso(today), t: txt }); S.log = S.log.slice(0, 80); }
 
-  function renderAlerta() {
-    var itens = [];
+  /* rotinas PMOC: última execução e próximo vencimento */
+  function rotLast(t, c) {
+    if (t.tipo === "leitura") { var l = last(c); return l ? parse(l.data) : parse(D.inicioPlano); }
+    var v = S.exec[t.id + ":" + c.id];
+    return v ? parse(v) : parse(D.inicioPlano);
+  }
+  function rotDue(t, c) { return addDays(rotLast(t, c), t.dias); }
+
+  /* lista única de ações, em ordem de data */
+  function agenda() {
+    var out = [], ord = { peca: 0, c4: 1, etapa: 2, rot: 3, rod: 4 }, i;
+    // 1) peças pendentes (corretivas)
+    var grp = {};
+    D.pecas.forEach(function (q) {
+      if (!q.itens.some(function (it) { return !it.garantia; })) return;
+      var e = D.etapasPeca.filter(function (x) { return !pecaSt(q.id, x.id).done; })[0];
+      if (!e) return;
+      var w = e.id === "rev" ? parse(q.validade) : today;
+      var g = grp[e.id] = grp[e.id] || { e: e, qs: [], when: w };
+      g.qs.push(q); if (w < g.when) g.when = w;
+    });
+    Object.keys(grp).forEach(function (k) {
+      var g = grp[k], tot = g.qs.reduce(function (a, q) { return a + pagarQ(q); }, 0);
+      out.push({ k: "peca", when: g.when, lbl: g.e.id === "rev" ? "Venceu em" : "Até", what: g.e.acao,
+        ids: g.qs.map(function (q) { return q.cmp; }), who: g.e.resp, link: "#pecas",
+        why: g.qs.length + " proposta" + (g.qs.length > 1 ? "s" : "") + " · " + brl(tot) + ". O técnico apontou filtro de ar saturado em 14/08.",
+        act: { t: "peca", ids: g.qs.map(function (q) { return q.id + ":" + g.e.id; }) } });
+    });
+    // 2) compressor 4
+    var p4 = D.c4.pendencias.filter(function (p) { return !c4St(p.id).done; })[0];
+    if (p4) out.push({ k: "c4", when: p4.id === "mang" ? parse(D.c4.previsao) : today, lbl: "Previsto", what: p4.nome, ids: ["C4"], who: p4.resp, why: p4.nota, link: "#c4", act: { t: "c4", id: p4.id } });
+    // 3) revisão de 8000 h (serviço B)
+    var eg = {};
     INF.forEach(function (inf) {
-      var p = prazos(inf);
-      if (!p) return;
-      var n = proxima(p);
-      if (n) itens.push({ tag: inf.c.tag, n: n });
+      if (inf.c.novo) return;
+      var p = prazos(inf); if (!p) return;
+      var n = proxima(p); if (!n) return;
+      var key = n.e.id + iso(n.dl);
+      var g = eg[key] = eg[key] || { n: n, ids: [], sims: [] };
+      g.ids.push(inf.c.id); g.sims.push(inf.sim.data8000);
     });
-    var el = $("#alerta");
-    var c4pend = D.c4.pendencias.filter(function (x) { return !c4St(x.id).done; });
-    var c4Html = c4pend.length ? '<div class="alerta warn"><h3>CPS-14Q004 em stand-by</h3><ul><li><span>' + c4pend.length + ' pendências · mangueira de garantia prevista para ' + brs(parse(D.c4.previsao)) + '</span><span><a href="#c4">ver</a></span></li></ul></div>' : "";
-    var venc = pecasVencidas();
-    var pecasHtml = venc.length ? '<div class="alerta bad"><h3>Orçamentos de peças vencidos</h3><ul>' + venc.map(function (q) {
-      var c = D.compressores.filter(function (x) { return x.id === q.cmp; })[0];
-      return '<li><span><b>' + esc(c.tag) + '</b> · proposta ' + q.id + ' · ' + brl(q.itens.reduce(function (a, i) { return a + (i.garantia ? 0 : i.valor * i.qtd); }, 0)) + '</span><span>venceu há ' + (-diff(parse(q.validade), today)) + ' dias</span></li>';
-    }).join("") + '</ul><p class="sw" style="margin-top:8px">Peçam revalidação ao fornecedor antes de aprovar. <a href="#pecas">Ver peças</a></p></div>' : "";
-    if (!itens.length) {
-      el.innerHTML = pecasHtml + c4Html + '<div class="alerta ok"><h3>Tudo em dia</h3><p>Nenhuma etapa pendente nos compressores em operação.</p></div>';
-      return;
-    }
-    itens.sort(function (a, b) { return a.n.dl - b.n.dl; });
-    var pior = itens[0].n.dd < 0 ? "bad" : itens[0].n.dd <= 14 ? "warn" : "";
-    // junta compressores com a mesma etapa e prazo
-    var grupos = {};
-    itens.forEach(function (i) {
-      var k = i.n.e.id + iso(i.n.dl);
-      grupos[k] = grupos[k] || { n: i.n, tags: [] };
-      grupos[k].tags.push(i.tag.replace("CPS-", ""));
+    Object.keys(eg).forEach(function (k) {
+      var g = eg[k], d8 = g.sims.sort(function (a, b) { return a - b; })[0];
+      out.push({ k: "etapa", when: g.n.dl, lbl: "Até", what: "Revisão 8000 h: " + g.n.e.nome, ids: g.ids, who: g.n.e.resp, link: "#fluxo",
+        why: "8000 h previstas em " + br(d8) + ". " + g.n.e.dica,
+        act: { t: "etapa", ids: g.ids.map(function (id) { return id + ":" + g.n.e.id; }) } });
     });
-    var lis = Object.keys(grupos).map(function (k) { return grupos[k]; }).sort(function (a, b) { return a.n.dl - b.n.dl; }).slice(0, 4).map(function (g) {
-      return '<li><span><b>' + esc(g.n.e.nome) + '</b> · ' + esc(g.tags.join(", ")) + '</span><span>até ' + brs(g.n.dl) + ' · ' + dTxt(g.n.dd) + '</span></li>';
-    }).join("");
-    var titulo = pior === "bad" ? "Prazo vencido" : pior === "warn" ? "Prazo chegando" : "Próximas ações";
-    el.innerHTML = pecasHtml + c4Html + '<div class="alerta ' + pior + '"><h3>Revisão 8000 h · ' + titulo.toLowerCase() + '</h3><ul>' + lis + '</ul></div>';
-  }
-
-  function ring(pct, cor) {
-    var r = 36, circ = 2 * Math.PI * r, v = Math.max(0, Math.min(1, pct)) * circ;
-    return '<div class="ring" style="--cc:' + cor + '"><svg viewBox="0 0 84 84"><circle class="trk" cx="42" cy="42" r="' + r + '" fill="none" stroke-width="9"/><circle class="val" cx="42" cy="42" r="' + r + '" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + v.toFixed(1) + ' ' + circ.toFixed(1) + '"/></svg><b>' + Math.round(pct * 100) + '%</b></div>';
-  }
-
-  function renderCards() {
-    var w = weekFor(today);
-    $("#cards").innerHTML = INF.map(function (inf) {
-      var c = inf.c, sim = inf.sim, cor = "var(--c" + (inf.idx + 1) + ")";
-      if (c.novo) {
-        var pend = D.c4.pendencias.filter(function (x) { return !((S.c4.itens || {})[x.id] || {}).done; }).length;
-        return '<article class="card cmp" style="--cc:' + cor + '"><div class="cmp-top"><span class="badge"><i class="dot"></i><span class="tag">' + esc(c.tag) + '</span></span><span class="chip warn">STAND-BY</span></div>' +
-          '<div class="hrs mono">' + (sim ? fmtN(sim.horasHoje) : '—') + ' <small>/ ' + fmtN(D.metaHoras) + ' h</small></div>' +
-          '<p class="muted" style="margin:0">Novo, com start-up incompleto. Recomendado <b>não operar como principal</b> até trocar a mangueira de descarga (previsão de faturamento: ' + brs(parse(D.c4.previsao)) + ').</p>' +
-          '<dl class="kv"><dt>Pendências</dt><dd>' + pend + ' de ' + D.c4.pendencias.length + '</dd><dt>Leitura do horímetro</dt><dd>' + (sim ? brs(parse(sim.leitura.data)) : 'não lançada') + '</dd></dl>' +
-          '<a class="btn ghost" href="#c4">Ver pendências do C4</a></article>';
+    // 4) rotinas PMOC (só as que vencem nos próximos 45 dias)
+    D.tarefas.forEach(function (t) {
+      if (t.rastrear === false) return;
+      var cs = ativos(), min = null, due = {};
+      cs.forEach(function (c) { due[c.id] = rotDue(t, c); if (!min || due[c.id] < min) min = due[c.id]; });
+      if (!min || diff(min, today) > 45) return;
+      var ids = cs.filter(function (c) { return diff(due[c.id], min) <= 0; }).map(function (c) { return c.id; });
+      out.push({ k: "rot", when: min, lbl: "Até", what: t.acao, ids: ids, who: t.resp, link: "#plano",
+        why: t.per + ". Registro: " + t.reg + ".",
+        act: t.tipo === "leitura" ? { t: "link", href: "#ferramentas", label: "Lançar leitura" } : { t: "rot", keys: ids.map(function (id) { return t.id + ":" + id; }) } });
+    });
+    // 5) próxima troca do rodízio
+    for (i = 1; i < D.rodizio.length; i++) {
+      var w = D.rodizio[i], pv = D.rodizio[i - 1];
+      if (JSON.stringify(w.on) === JSON.stringify(pv.on) || S.exec["rod:" + w.n] || parse(w.fim) < today) continue;
+      if (diff(parse(w.ini), today) <= 45) {
+        var base = D.compressores.filter(function (c) { return !c.novo; });
+        var off = base.filter(function (c) { return w.on.indexOf(c.id) < 0; }).map(tagC);
+        out.push({ k: "rod", when: parse(w.ini), lbl: "Em", what: "Trocar o rodízio: ligar " + w.on.map(function (id) { return tagC(cmpById(id)); }).join(" e ") + (off.length ? ", descansa " + off.join(", ") : ""),
+          ids: base.map(function (c) { return c.id; }), who: "Operação", link: "#grafico", why: "Semana " + w.n + ". " + w.obs, act: { t: "rod", n: w.n } });
       }
-      var h = sim.horasHoje, pct = h / D.metaHoras, falta = Math.max(0, D.metaHoras - h);
-      var ligado = c.novo ? true : (w ? w.on.indexOf(c.id) >= 0 : true);
-      var d = sim.data8000, dd = d ? diff(d, today) : null;
-      var p = prazos(inf), prox = p ? proxima(p) : null;
-      var st = ligado ? '<span class="chip on">LIGADO</span>' : '<span class="chip off">DESCANSANDO</span>';
-      return '<article class="card cmp" style="--cc:' + cor + '">' +
-        '<div class="cmp-top"><span class="badge"><i class="dot"></i><span class="tag">' + esc(c.tag) + '</span></span>' + st + '</div>' +
-        '<div class="gauge">' + ring(pct, cor) +
-        '<div><div class="hrs mono">' + fmtN(h) + ' <small>/ ' + fmtN(D.metaHoras) + ' h</small></div>' +
-        '<div class="est">' + (sim.estimado ? 'estimado hoje · leitura de ' + brs(parse(sim.leitura.data)) + ': ' + fmtN(sim.leitura.horas) + ' h' : 'leitura de hoje') + '</div></div></div>' +
-        '<dl class="kv"><dt>Faltam</dt><dd class="mono">' + fmtN(falta) + ' h</dd>' +
-        '<dt>8000 h previsto</dt><dd>' + (d ? br(d) : '—') + '</dd>' +
-        '<dt>Dias até a revisão</dt><dd>' + (dd == null ? '—' : dd + ' dias') + '</dd>' +
-        '<dt>Próxima ação</dt><dd>' + (prox ? esc(prox.e.nome.split(" ")[0] + " " + (prox.e.nome.split(" ")[1] || "")) + ' · ' + brs(prox.dl) : 'Concluído') + '</dd></dl>' +
-        '</article>';
+      break;
+    }
+    out.sort(function (a, b) { return (a.when - b.when) || (ord[a.k] - ord[b.k]); });
+    return out;
+  }
+
+  function relTxt(dd) { return dd < 0 ? "atrasada há " + (-dd) + (dd === -1 ? " dia" : " dias") : dd === 0 ? "é hoje" : dd === 1 ? "é amanhã" : "faltam " + dd + " dias"; }
+  function btnAct(i, big) {
+    var it = AG[i], c = "btn" + (big ? "" : " sm");
+    if (it.act.t === "link") return '<a class="' + c + '" href="' + it.act.href + '">' + it.act.label + '</a>';
+    return '<button class="' + c + '" data-af="' + i + '">✓ Feito</button>';
+  }
+  function rowHtml(i) {
+    var it = AG[i], dd = diff(it.when, today), cls = dd < 0 ? "bad" : dd <= 7 ? "warn" : "";
+    return '<div class="ar ' + cls + '"><div class="ar-d"><b>' + brs(it.when) + '</b><small>' + dTxt(dd) + '</small></div>' +
+      '<div class="ar-m"><div class="w">' + esc(it.what) + '</div><div class="m">' + tagsHtml(it.ids) + ' <span>' + esc(it.who) + '</span></div></div>' + btnAct(i, false) + '</div>';
+  }
+  function renderTopo() {
+    AG = agenda();
+    var el = $("#hero"), sg = $("#seguinte");
+    if (!AG.length) { el.innerHTML = '<div class="hero"><div class="hero-k">TUDO EM DIA</div><h1>Nenhuma ação pendente agora</h1></div>'; sg.innerHTML = ""; return; }
+    var h = AG[0], dd = diff(h.when, today), cls = dd < 0 ? "bad" : dd <= 7 ? "warn" : "";
+    el.innerHTML = '<div class="hero ' + cls + '"><div class="hero-k">PRÓXIMA AÇÃO</div><h1>' + esc(h.what) + '</h1><div class="hero-tags">' + tagsHtml(h.ids) + '</div>' +
+      '<div class="q3"><div><span>QUANDO</span><b>' + h.lbl + ' ' + br(h.when) + '</b><em class="' + cls + '">' + relTxt(dd) + '</em></div>' +
+      '<div><span>QUEM</span><b>' + esc(h.who) + '</b></div></div>' +
+      '<p class="why">' + esc(h.why) + '</p>' +
+      '<div class="btns">' + btnAct(0, true) + '<a class="btn ghost" href="' + h.link + '">Ver detalhes</a></div></div>';
+    var rows = "", i;
+    for (i = 1; i < Math.min(AG.length, 6); i++) rows += rowHtml(i);
+    var resto = "";
+    for (i = 6; i < AG.length; i++) resto += rowHtml(i);
+    sg.innerHTML = (rows ? '<h2 class="h-list">Depois disso</h2><div class="ag">' + rows + '</div>' : '') +
+      (resto ? '<details class="more"><summary>Ver as outras ' + (AG.length - 6) + ' ações</summary><div class="ag">' + resto + '</div></details>' : '');
+  }
+
+  function renderEstado() {
+    var w = weekFor(today);
+    $("#estado").innerHTML = INF.map(function (inf) {
+      var c = inf.c, sim = inf.sim, cor = "var(--c" + (inf.idx + 1) + ")", chip, linha, hrs;
+      if (c.novo && !c4St("lib").done) {
+        chip = '<span class="chip warn">STAND-BY</span>'; hrs = "—";
+        linha = "Aguarda mangueira (" + brs(parse(D.c4.previsao)) + ")";
+      } else if (!sim) {
+        chip = '<span class="chip off">SEM LEITURA</span>'; hrs = "—"; linha = "Lance a leitura";
+      } else {
+        var lig = w ? w.on.indexOf(c.id) >= 0 : true;
+        chip = lig ? '<span class="chip on">LIGADO</span>' : '<span class="chip off">DESCANSA</span>';
+        hrs = (sim.estimado ? "~" : "") + fmtN(sim.horasHoje) + " h";
+        linha = sim.data8000 ? "8000 h em " + brs(sim.data8000) + " · faltam " + fmtN(Math.max(0, D.metaHoras - sim.horasHoje)) + " h" : "—";
+      }
+      return '<article class="es" style="--cc:' + cor + '"><div class="es-t"><b class="tag">' + esc(tagC(c)) + '</b>' + chip + '</div><div class="hrs mono">' + hrs + '</div><small>' + esc(linha) + '</small></article>';
     }).join("");
   }
 
-  function renderSemana() {
-    var w = weekFor(today), el = $("#semana");
-    if (!w) { el.innerHTML = ""; return; }
-    var base = D.compressores.filter(function (c) { return !c.novo; });
-    var pills = base.map(function (c) {
-      var on = w.on.indexOf(c.id) >= 0;
-      return '<span class="chip ' + (on ? "on" : "off") + '">' + esc(c.tag.replace("CPS-", "")) + ' · ' + (on ? "LIGADO" : "DESCANSA") + '</span>';
+  /* ---------- cronograma: fabricante + PMOC ---------- */
+  function svcDate(sv, cid) { return S.exec["sv:" + sv + ":" + cid] || ""; }
+  function renderPlano() {
+    var M = D.manual, sem = false;
+    var cards = D.compressores.map(function (c, idx) {
+      var sim = INF[idx].sim, h = sim ? sim.horasHoje : null, cor = "var(--c" + (idx + 1) + ")";
+      var linhas = M.servicos.map(function (s) {
+        var falta = h == null ? null : s.horas - h, st, extra = "", inp = "";
+        if (h == null) st = '<span class="chip off">sem leitura</span>';
+        else if (falta > 0) {
+          st = '<span class="chip ' + (falta < 1500 ? "warn" : "off") + '">faltam ' + fmtN(falta) + ' h</span>';
+          if (s.id === "B" && sim.data8000) extra = " · previsto " + br(sim.data8000);
+        } else {
+          st = '<span class="chip warn">passou das ' + fmtN(s.horas) + ' h</span>';
+          if (!svcDate(s.id, c.id)) sem = true;
+        }
+        if (s.tempo) {
+          var dt = svcDate(s.id, c.id), anos = parseInt(s.tempo, 10);
+          inp = '<label class="sv-d">Último serviço ' + s.id + ' <input type="date" data-svd="' + s.id + ":" + c.id + '" value="' + esc(dt) + '"></label>';
+          if (dt) { var lim = parse(dt); lim = new Date(lim.getFullYear() + anos, lim.getMonth(), lim.getDate()); extra += " · limite por tempo " + br(lim) + (lim < today ? " (vencido)" : ""); }
+        }
+        return '<div class="sv"><div><b>Serviço ' + s.id + '</b> <small>a cada ' + fmtN(s.horas) + ' h' + (s.tempo ? ' ou ' + s.tempo : '') + '</small></div><div>' + st + '<small>' + extra + '</small></div>' + inp + '</div>';
+      }).join("");
+      return '<article class="card"><div class="cmp-top"><span class="badge"><i class="dot" style="--cc:' + cor + '"></i><span class="tag">' + esc(c.tag) + '</span></span><span class="sw">' + esc(c.modelo) + ' · ' + esc(c.serie) + '</span></div>' +
+        '<div class="hrs mono" style="margin:8px 0">' + (h == null ? "—" : (sim.estimado ? "~" : "") + fmtN(h)) + ' <small>h</small></div><div class="svc">' + linhas + '</div></article>';
     }).join("");
-    var prox = D.rodizio.filter(function (x) { return parse(x.ini) > today && JSON.stringify(x.on) !== JSON.stringify(w.on); })[0];
-    el.innerHTML = '<div class="card"><div><div class="sw">Rodízio · semana ' + w.n + ' de ' + D.rodizio.length + ' (' + brs(parse(w.ini)) + ' a ' + brs(parse(w.fim)) + ')</div><div style="font-weight:600;margin-top:2px">' + esc(w.obs) + '</div></div><div class="pills">' + pills + '</div>' +
-      (prox ? '<div class="sw" style="flex-basis:100%">Próxima troca de configuração: ' + br(parse(prox.ini)) + ' (semana ' + prox.n + ')</div>' : '') + '</div>';
+
+    var cab = '<tr><th>Item</th>' + M.servicos.map(function (s) { return '<th>' + s.id + '<small>' + fmtN(s.horas) + ' h</small></th>'; }).join("") + '</tr>';
+    var corpo = M.itens.map(function (it) {
+      return '<tr><td>' + esc(it.nome) + (it.nota ? '<small>' + esc(it.nota) + '</small>' : '') + '</td>' + M.servicos.map(function (s) { return '<td>' + (it[s.id] ? '✓' : '') + '</td>'; }).join("") + '</tr>';
+    }).join("");
+    var matriz = '<details class="more"><summary>Itens de cada serviço (tabela do manual)</summary><div class="tw"><table class="mt"><thead>' + cab + '</thead><tbody>' + corpo + '</tbody></table></div>' +
+      '<p class="muted" style="margin-top:8px">Vale o que ocorrer primeiro: horas de funcionamento ou tempo. Serviços mais longos incluem os mais curtos. O Centro de Clientes Atlas Copco pode alterar os intervalos conforme poeira, calor e umidade.</p></details>';
+
+    var emDia = 0, total = 0;
+    var rows = D.tarefas.map(function (t) {
+      var prox = "—", chip = '<span class="chip off">sem registro aqui</span>';
+      if (t.rastrear !== false) {
+        var min = null;
+        ativos().forEach(function (c) { var d = rotDue(t, c); if (!min || d < min) min = d; });
+        var dd = diff(min, today); total++; if (dd >= 0) emDia++;
+        prox = br(min);
+        chip = dd < 0 ? '<span class="chip bad">ATRASADA</span>' : dd <= 7 ? '<span class="chip warn">' + dTxt(dd) + '</span>' : '<span class="chip on">EM DIA</span>';
+      }
+      return '<div class="pmr"><span class="n"><b>' + esc(t.nome) + '</b><small>' + esc(t.acao) + '</small></span><span><i>Frequência</i>' + esc(t.per) + '</span><span><i>Responsável</i>' + esc(t.resp) + '</span><span><i>Próxima</i>' + prox + '</span><span class="st">' + chip + '</span><small class="fo">Fonte: ' + esc(t.fonte) + '</small></div>';
+    }).join("");
+    var head = '<div class="pmh"><span>Rotina</span><span>Frequência</span><span>Responsável</span><span>Próxima</span><span></span></div>';
+
+    $("#planoBox").innerHTML =
+      '<p class="muted">Plano: ' + esc(D.responsavelPlano) + ' · Execução externa: Supertec · Fonte: ' + esc(M.fonte) + '.</p>' +
+      (sem ? '<div class="note" style="margin:0 0 12px"><b>Confirmar com a Supertec:</b> os compressores já passaram das 4.000 h e não há registro do Serviço A. Informe abaixo a data do último serviço de cada um para controlar também o limite por tempo (1 ano para A, 2 anos para B).</div>' : '') +
+      '<h3>Serviços do fabricante, por compressor</h3><div class="cards">' + cards + '</div>' + matriz +
+      '<h3 style="margin-top:20px">Rotinas de operação e controle (PMOC)</h3><div class="pm">' + head + rows + '</div>';
+    PLANO_ST = { total: total, emDia: emDia };
+  }
+  var PLANO_ST = { total: 0, emDia: 0 };
+
+  function renderBadges() {
+    var atr = PLANO_ST.total - PLANO_ST.emDia;
+    $("#bPlano").textContent = atr > 0 ? atr + " atrasada" + (atr > 1 ? "s" : "") : "rotinas em dia";
+    $("#bPlano").className = "bdg" + (atr > 0 ? " bad" : "");
+    var np = D.pecas.filter(function (q) { return q.itens.some(function (i) { return !i.garantia; }) && !pecaSt(q.id, "ins").done; }).length;
+    $("#bPecas").textContent = np ? np + " pendente" + (np > 1 ? "s" : "") : "concluídas";
+    $("#bPecas").className = "bdg" + (pecasVencidas().length ? " bad" : "");
+    var n4 = D.c4.pendencias.filter(function (p) { return !c4St(p.id).done; }).length;
+    $("#bC4").textContent = n4 ? n4 + " pendências" : "liberado";
+    var prox = null;
+    INF.forEach(function (inf) { var p = prazos(inf); var n = p && proxima(p); if (n && (!prox || n.dl < prox.dl)) prox = n; });
+    $("#bFluxo").textContent = prox ? "próx.: " + brs(prox.dl) : "—";
+    var ds = INF.filter(function (i) { return i.sim && i.sim.data8000 && !i.c.novo; }).map(function (i) { return i.sim.data8000; }).sort(function (a, b) { return a - b; });
+    $("#bHoras").textContent = ds.length ? "8000 h em " + brs(ds[0]) : "—";
   }
 
   /* ---------- render: fluxo ---------- */
@@ -225,7 +347,7 @@
     return D.pecas.filter(function (q) { return parse(q.validade) < today && !pecaSt(q.id, "ped").done && !pecaSt(q.id, "rev").done; });
   }
   function renderPecas() {
-    var pagar = function (q) { return q.itens.reduce(function (a, i) { return a + (i.garantia ? 0 : i.valor * i.qtd); }, 0); };
+    var pagar = pagarQ;
     var tot = D.pecas.reduce(function (a, q) { return a + pagar(q); }, 0);
     var f = D.fornecedor;
     var topo = '<div class="card pecas-top"><div><div class="sw">A pagar nos 3 orçamentos (sem o item em garantia)</div><div class="hrs mono">' + brl(tot) + '</div></div>' +
@@ -252,8 +374,7 @@
         (q.tecnico ? '<p class="muted" style="margin:0 0 10px">' + esc(q.tecnico) + '</p>' : '') +
         '<div class="psteps">' + passos + '</div></article>';
     }).join("");
-    var rep = '<div class="note"><b>Atenção:</b> o técnico apontou em 14/08 filtro de ar saturado nos três compressores (no C3, recomendou não operar até a troca). As propostas estão vencidas e não há registro de aprovação. O dreno do C3 já foi trocado pela garantia em 21/09. Se for pedir tudo junto, vale negociar condição na revalidação.</div>';
-    $("#pecasBox").innerHTML = topo + '<div class="cards pecas">' + cards + '</div>' + rep;
+    $("#pecasBox").innerHTML = topo + '<div class="cards pecas">' + cards + '</div>';
   }
 
   /* ---------- compressor 04 ---------- */
@@ -314,7 +435,7 @@
     var txt = span <= 7
       ? 'o rodízio leva os três compressores às 8000 h na mesma semana (diferença de ' + span + ' dia' + (span === 1 ? '' : 's') + ').'
       : 'com o rodízio escrito, os três chegam às 8000 h em datas diferentes (' + span + ' dias de diferença; ' + ord[0].c.tag + ' primeiro, em ' + br(ord[0].sim.data8000) + '). O plano de equalização precisa de ajuste, ou as revisões saem escalonadas.';
-    $("#dica").innerHTML = '<b>Atenção:</b> ' + txt + ' Revisão dos três quase juntos deixa o sistema sem reserva. Com o CPS-14Q004 em operação, vale <b>escalonar as revisões</b> e manter sempre uma máquina de reserva. Posso reajustar o rodízio quando o C4 for startado.';
+    $("#dica").innerHTML = '<b>Atenção:</b> ' + txt + ' Com o CPS-14Q004 liberado, escalone as revisões para sempre ter uma máquina de reserva.';
   }
 
   /* ---------- rodízio ---------- */
@@ -389,11 +510,32 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   }
 
+  function renderHist() {
+    var l = S.log || [];
+    $("#historico").innerHTML = l.length ? '<div class="lst">' + l.slice(0, 10).map(function (x) { return '<div><span>' + br(parse(x.d)) + ' · ' + esc(x.t) + '</span></div>'; }).join("") + '</div>' : '<p class="muted">Nada registrado ainda. Ao tocar em "Feito", a ação aparece aqui com a data.</p>';
+  }
+  function doAct(it) {
+    var a = it.act, d = iso(today);
+    if (a.t === "peca") a.ids.forEach(function (x) { var p = x.split(":"); setPeca(p[0], p[1], { done: true, date: d }); });
+    else if (a.t === "c4") { S.c4.itens = S.c4.itens || {}; S.c4.itens[a.id] = { done: true, date: d }; }
+    else if (a.t === "etapa") a.ids.forEach(function (x) { var p = x.split(":"); setEtapa(p[0], p[1], { done: true, date: d }); });
+    else if (a.t === "rot") a.keys.forEach(function (k) { S.exec[k] = d; });
+    else if (a.t === "rod") S.exec["rod:" + a.n] = d;
+    logAdd(it.what + " (" + it.ids.map(function (id) { return tagC(cmpById(id)); }).join(", ") + ")");
+    save(); renderAll();
+  }
+  function abrir(h) { var el = h && h.length > 1 ? document.getElementById(h.slice(1)) : null; if (el && el.tagName === "DETAILS") el.open = true; }
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest('a[href^="#"]'); if (a) abrir(a.getAttribute("href"));
+    var b = e.target.closest("[data-af]"); if (b) doAct(AG[+b.dataset.af]);
+  });
+  window.addEventListener("hashchange", function () { abrir(location.hash); });
+
   /* ---------- eventos ---------- */
   function renderAll() {
     INF = info();
-    renderHoje(); renderAlerta(); renderCards(); renderSemana(); renderPecas(); renderC4();
-    renderTabs(); renderEtapas(); renderChart(); renderRod(); renderForm(); renderMsg();
+    renderHoje(); renderTopo(); renderEstado(); renderPlano(); renderPecas(); renderC4();
+    renderTabs(); renderEtapas(); renderChart(); renderRod(); renderForm(); renderMsg(); renderHist(); renderBadges();
   }
 
   document.addEventListener("click", function (e) {
@@ -403,16 +545,16 @@
       S.c4.itens = S.c4.itens || {};
       var cur4 = S.c4.itens[t.dataset.c4chk] || {};
       S.c4.itens[t.dataset.c4chk] = { done: !cur4.done, date: !cur4.done ? iso(today) : null }; save();
-      renderC4(); renderAlerta(); renderCards();
+      renderC4(); renderTopo(); renderEstado(); renderBadges();
     } else if (t.dataset.pchk) {
       var pp = t.dataset.pchk.split(":"), pc = pecaSt(pp[0], pp[1]);
       setPeca(pp[0], pp[1], { done: !pc.done, date: !pc.done ? iso(today) : null });
-      renderPecas(); renderAlerta();
+      renderPecas(); renderTopo(); renderBadges();
     } else if (t.dataset.tab) { tabSel = t.dataset.tab; renderTabs(); renderEtapas(); }
     else if (t.dataset.chk) {
       var cur = etapaState(tabSel, t.dataset.chk);
       setEtapa(tabSel, t.dataset.chk, { done: !cur.done, date: !cur.done ? iso(today) : null });
-      renderAlerta(); renderEtapas(); renderMsg();
+      renderTopo(); renderEtapas(); renderMsg(); renderBadges();
     } else if (t.dataset.del) {
       var p = t.dataset.del.split(":");
       (S.leituras[p[0]] || []).splice(+p[1], 1); save(); renderAll();
@@ -420,7 +562,8 @@
   });
   document.addEventListener("change", function (e) {
     var t = e.target;
-    if (t.dataset.pcampo) { var q = t.dataset.pcampo.split(":"); setPeca(q[0], q[1], { campo: t.value }); }
+    if (t.dataset.svd) { S.exec["sv:" + t.dataset.svd] = t.value; save(); renderPlano(); }
+    else if (t.dataset.pcampo) { var q = t.dataset.pcampo.split(":"); setPeca(q[0], q[1], { campo: t.value }); }
     else if (t.dataset.campo) setEtapa(tabSel, t.dataset.campo, { campo: t.value });
     else if (t.dataset.nota) setEtapa(tabSel, t.dataset.nota, { nota: t.value });
     else if (t.dataset.c4h !== undefined) { S.c4.horasDia = Math.max(0, Math.min(24, +t.value || 0)); save(); renderAll(); }
@@ -465,4 +608,5 @@
   });
 
   renderAll();
+  abrir(location.hash);
 })();
