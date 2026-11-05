@@ -246,8 +246,9 @@
           st = '<span class="chip ' + (falta < 1500 ? "warn" : "off") + '">faltam ' + fmtN(falta) + ' h</span>';
           if (s.id === "B" && sim.data8000) extra = " · previsto " + br(sim.data8000);
         } else {
-          st = '<span class="chip warn">passou das ' + fmtN(s.horas) + ' h</span>';
-          if (!svcDate(s.id, c.id)) sem = true;
+          var dtf = svcDate(s.id, c.id), feito = M.feitos.indexOf(s.id + ":" + c.id) >= 0;
+          st = dtf ? '<span class="chip on">feito em ' + br(parse(dtf)) + '</span>' : feito ? '<span class="chip on">feito · informar a data</span>' : '<span class="chip warn">passou das ' + fmtN(s.horas) + ' h</span>';
+          if (!dtf && !feito) sem = true;
         }
         if (s.tempo) {
           var dt = svcDate(s.id, c.id), anos = parseInt(s.tempo, 10);
@@ -283,7 +284,7 @@
 
     $("#planoBox").innerHTML =
       '<p class="muted">Plano: ' + esc(D.responsavelPlano) + ' · Execução externa: Supertec · Fonte: ' + esc(M.fonte) + '.</p>' +
-      (sem ? '<div class="note" style="margin:0 0 12px"><b>Confirmar com a Supertec:</b> os compressores já passaram das 4.000 h e não há registro do Serviço A. Informe abaixo a data do último serviço de cada um para controlar também o limite por tempo (1 ano para A, 2 anos para B).</div>' : '') +
+      (sem ? '<div class="note" style="margin:0 0 12px"><b>Confirmar com a Supertec:</b> há serviço vencido por horas sem registro. Informe a data do último serviço para controlar também o limite por tempo (1 ano para A, 2 anos para B).</div>' : '') +
       '<h3>Serviços do fabricante, por compressor</h3><div class="cards">' + cards + '</div>' + matriz +
       '<h3 style="margin-top:20px">Rotinas de operação e controle (PMOC)</h3><div class="pm">' + head + rows + '</div>';
     PLANO_ST = { total: total, emDia: emDia };

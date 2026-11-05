@@ -63,6 +63,8 @@ window.DATA = {
   // Cada serviço vale pelo que ocorrer primeiro: horas de funcionamento OU tempo.
   manual: {
     fonte: "Manual Atlas Copco GA 75L/90/110 VSD+, seção 6.1 (págs. 75–78) e 6.10",
+    // Serviços já feitos (informado pelo PCM em 05/11/2026). A data exata ainda não foi informada.
+    feitos: ["A:C1", "A:C2", "A:C3"],
     servicos: [
       { id: "A", horas: 4000,  tempo: "1 ano" },
       { id: "B", horas: 8000,  tempo: "2 anos" },
