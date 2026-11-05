@@ -29,6 +29,7 @@ window.DATA = {
   ],
 
   // Orçamentos de PEÇAS levantadas na última visita do técnico (não são da revisão de 8000 h).
+  pecasValidas: true,   // PCM confirmou em 05/11/2026: as propostas seguem válidas, sem precisar revalidar
   fornecedor: { nome: "Supertec Comércio e Imp Ltda (distribuidor Atlas Copco) · Sinop/MT", vendedor: "Jeovani" },
   pecas: [
     { id: "962997", cmp: "C1", modelo: "GA110VSD+ BQR144249", emissao: "2026-08-17", validade: "2026-09-16", total: 18443.65,
@@ -50,7 +51,6 @@ window.DATA = {
           garantia: true, nota: "Resolvido pela garantia da fábrica e instalado em 21/09/2026. Não entra no valor a pagar." } ] }
   ],
   etapasPeca: [
-    { id: "rev", nome: "Revalidar proposta (preço e validade)", acao: "Pedir à Supertec a revalidação das propostas de peças", resp: "Manutenção" },
     { id: "apr", nome: "Aprovar orçamento", acao: "Aprovar as propostas de peças", resp: "Gestor" },
     { id: "ped", nome: "Gerar pedido no Compras", acao: "Gerar o pedido das peças no Compras", resp: "Compras" },
     { id: "rec", nome: "Receber as peças", acao: "Receber as peças da Supertec", resp: "Supertec" },

@@ -345,7 +345,7 @@
   function pecaSt(id, eid) { return ((S.pecas[id] || {})[eid]) || {}; }
   function setPeca(id, eid, patch) { S.pecas[id] = S.pecas[id] || {}; S.pecas[id][eid] = Object.assign({}, S.pecas[id][eid], patch); save(); }
   function pecasVencidas() {
-    return D.pecas.filter(function (q) { return parse(q.validade) < today && !pecaSt(q.id, "ped").done && !pecaSt(q.id, "rev").done; });
+    return D.pecas.filter(function (q) { return !D.pecasValidas && parse(q.validade) < today && !pecaSt(q.id, "ped").done; });
   }
   function renderPecas() {
     var pagar = pagarQ;
@@ -356,8 +356,8 @@
     var cards = D.pecas.map(function (q) {
       var c = D.compressores.filter(function (x) { return x.id === q.cmp; })[0];
       var dv = diff(parse(q.validade), today);
-      var vcls = pecaSt(q.id, "rev").done ? "on" : dv < 0 ? "bad" : dv <= 7 ? "warn" : "on";
-      var vtxt = pecaSt(q.id, "rev").done ? "REVALIDADA" : dv < 0 ? "PROPOSTA VENCIDA HÁ " + (-dv) + " DIAS" : "VÁLIDA ATÉ " + brs(parse(q.validade));
+      var vcls = D.pecasValidas ? "on" : dv < 0 ? "bad" : dv <= 7 ? "warn" : "on";
+      var vtxt = D.pecasValidas ? "PROPOSTA VÁLIDA (CONFIRMADO)" : dv < 0 ? "PROPOSTA VENCIDA HÁ " + (-dv) + " DIAS" : "VÁLIDA ATÉ " + brs(parse(q.validade));
       var itens = q.itens.map(function (i) {
         if (i.garantia) return '<div class="item gar"><span>' + esc(i.desc) + ' <small>cód. ' + esc(i.cod) + ' · ' + esc(i.nota) + '</small></span><span class="mono"><s>' + brl(i.valor * i.qtd) + '</s> <small>garantia</small></span></div>';
         return '<div class="item"><span>' + esc(i.desc) + ' <small>cód. ' + esc(i.cod) + ' · P/N ' + esc(i.pn) + '</small></span><span class="mono">' + brl(i.valor * i.qtd) + (i.entrega ? ' <small>· ' + i.entrega + ' dias</small>' : '') + '</span></div>';
