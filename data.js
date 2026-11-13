@@ -64,10 +64,12 @@ window.DATA = {
   manual: {
     fonte: "Manual Atlas Copco GA 75L/90/110 VSD+, seção 6.1 (págs. 75–78) e 6.10",
     // Serviços já feitos dentro do prazo (informado pelo PCM em 05/11/2026). A data exata é opcional.
-    feitos: ["A:C1", "A:C2", "A:C3"],
+    feitos: ["A:C1", "A:C2"],
+    // C3: PCM informou em 13/11/2026 que a visita de junho foi apenas corretiva (problemas levantados antes), não o Serviço A.
+    soCorretiva: { "A:C3": "2026-06-19" },
     // Fonte: relatórios Supertec "4 mil horas" (OS de campo 5223, 5224 e 5276), visita de 17 a 19/06/2026.
     // Horas totais no dia da visita. O relatório marca "zerar horas do módulo" como realizado, mas o PCM confirmou em 13/11/2026 que o contador NÃO zerou e segue correndo (o Serviço B continua em 8000 h totais).
-    datas: { "A:C1": "2026-06-19", "A:C2": "2026-06-19", "A:C3": "2026-06-19" },
+    datas: { "A:C1": "2026-06-19", "A:C2": "2026-06-19" },
     horasNoServico: { C1: 2635, C2: 3335, C3: 5755 },
     servicos: [
       { id: "A", horas: 4000,  tempo: "1 ano" },

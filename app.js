@@ -248,7 +248,7 @@
   var SIT = { peca: ["Em proposta de peças", "off"], cotar: ["Falta cotação", "warn"], cliente: ["Ação da RRP", "warn"], feito: ["Resolvido", "on"] };
   function renderAchados() {
     var A = D.achados || [], aberto = 0;
-    $("#achadosBox").innerHTML = '<p class="muted">Relatórios Supertec da visita de 17 a 19/06/2026 (4000 h) e OS 2026/2789 e 2026/3689. O Serviço A foi executado nos três compressores. O contador do módulo não foi zerado e segue correndo.</p><div class="lst">' +
+    $("#achadosBox").innerHTML = '<p class="muted">Relatórios Supertec da visita de 17 a 19/06/2026 (4000 h) e OS 2026/2789 e 2026/3689. O Serviço A consta como feito no C1 e no C2; no C3 a visita foi só corretiva. O contador do módulo não foi zerado e segue correndo.</p><div class="lst">' +
       A.map(function (a) {
         var feito = achDone(a), s = feito ? SIT.feito : SIT[a.sit];
         if (!feito && a.acao) aberto++;
@@ -269,7 +269,9 @@
           if (s.id === "B" && sim.data8000) extra = " · previsto " + br(sim.data8000);
         } else {
           var dtf = svcDate(s.id, c.id), feito = M.feitos.indexOf(s.id + ":" + c.id) >= 0;
-          st = dtf ? '<span class="chip on">feito em ' + br(parse(dtf)) + '</span>' : feito ? '<span class="chip on">feito no prazo</span>' : '<span class="chip warn">passou das ' + fmtN(s.horas) + ' h</span>';
+          var cor = (M.soCorretiva || {})[s.id + ":" + c.id];
+          if (cor && !dtf) { st = '<span class="chip warn">só corretiva em ' + br(parse(cor)) + '</span>'; extra = " · Serviço " + s.id + " sem registro"; sem = true; }
+          else st = dtf ?'<span class="chip on">feito em ' + br(parse(dtf)) + '</span>' : feito ? '<span class="chip on">feito no prazo</span>' : '<span class="chip warn">passou das ' + fmtN(s.horas) + ' h</span>';
           if (!dtf && !feito) sem = true;
         }
         if (s.tempo) {
