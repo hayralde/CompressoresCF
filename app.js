@@ -248,7 +248,7 @@
   var SIT = { peca: ["Em proposta de peças", "off"], cotar: ["Falta cotação", "warn"], cliente: ["Ação da RRP", "warn"], feito: ["Resolvido", "on"] };
   function renderAchados() {
     var A = D.achados || [], aberto = 0;
-    $("#achadosBox").innerHTML = '<p class="muted">Relatórios Supertec da visita de 17 a 19/06/2026 (4000 h) e OS 2026/2789 e 2026/3689. O Serviço A foi executado nos três compressores e o módulo foi zerado.</p><div class="lst">' +
+    $("#achadosBox").innerHTML = '<p class="muted">Relatórios Supertec da visita de 17 a 19/06/2026 (4000 h) e OS 2026/2789 e 2026/3689. O Serviço A foi executado nos três compressores. O contador do módulo não foi zerado e segue correndo.</p><div class="lst">' +
       A.map(function (a) {
         var feito = achDone(a), s = feito ? SIT.feito : SIT[a.sit];
         if (!feito && a.acao) aberto++;
