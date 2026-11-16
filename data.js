@@ -103,14 +103,19 @@ window.DATA = {
 
   // Achados do relatório de 4000 h (jun/2026) e das OS 2026/2789 e 2026/3689.
   // sit: "peca" = já está numa proposta de peças · "cotar" = falta pedir cotação · "cliente" = ação da RRP · "feito" = resolvido
+  // Visita de 10 e 11/11/2026 (OS Supertec 5878 C2, 5880 C1, 5881 C3): filtros de ar trocados nos três.
+  bloqueioDesde: "2026-11-10",   // desde a visita, C2 parado: a projeção põe C1 e C3 ligados direto
+  pecasExec: { "962997": "2026-11-11", "962998": "2026-11-11", "962489": "2026-11-11" },
   achados: [
-    { id: "c1sb", cmp: "C1", t: "Smartbox queimada e dreno automático do trocador de calor queimado", sit: "peca", ref: "proposta 962997" },
+    { id: "c2vt", cmp: "C2", urg: true, t: "Ventilador principal com bobinas abertas; o compressor desarmou por temperatura do elemento (120 °C) e foi deixado BLOQUEADO e fora de operação (OS 5878, 11/11)", sit: "cotar", resp: "Supertec", acao: "Pedir cotação e prazo do ventilador do C2 (compressor parado)" },
+    { id: "c2mg", cmp: "C2", t: "A mangueira de descarga do C2 foi retirada e instalada no compressor 04. O C2 está sem ela", sit: "cotar", resp: "Supertec", acao: "Definir como o C2 recebe mangueira de descarga (a do C2 está no C4) e trocar o O-ring" },
+    { id: "tmp",  cmp: "C1,C2", t: "Desarmes por temperatura do elemento: C1 em 05/11 (trabalhando a 108 °C com ambiente de 40 °C) e C2 em 10/11 (120 °C). Resfriadores e ar sujos", sit: "cliente", resp: "Manutenção", ref: "a limpeza trimestral dos resfriadores está atrasada" },
+    { id: "c1sb", cmp: "C1", t: "Smartbox queimada e dreno automático do trocador de calor queimado", sit: "feito", ref: "trocados em 11/11/2026 (OS 5880); antena Smartbox conectada à rede" },
     { id: "c2dj", cmp: "C2", t: "Disjuntor geral desarmava acima de 95% de rotação. A Supertec limitou a rotação máxima a 90% e recomendou trocar o disjuntor imediatamente", sit: "cliente", resp: "Elétrica", acao: "Trocar o disjuntor geral e devolver a rotação máxima a 100%" },
-    { id: "c2or", cmp: "C2", t: "Anel O-ring danificado na conexão da mangueira de descarga; vedado com silicone (provisório)", sit: "cotar", resp: "Supertec", acao: "Pedir o O-ring da mangueira de descarga do C2 e trocar" },
     { id: "c3sp", cmp: "C3", t: "Defletor de óleo com emenda solta e trincas; chapa de inox solta dentro do reservatório pode ter danificado o filtro separador. Houve arraste de óleo. O defletor foi soldado pelo cliente. A Supertec recomendou trocar defletor e separador e usar o C3 em stand-by até a troca", sit: "cotar", resp: "Supertec", acao: "Pedir cotação do filtro separador e do defletor de óleo do C3" },
-    { id: "c3co", cmp: "C3", t: "Filtro coalescente saturado por causa do arraste de óleo", sit: "peca", ref: "proposta 962489 (kit UD430+)" },
+    { id: "c3co", cmp: "C3", t: "Filtro coalescente saturado por causa do arraste de óleo", sit: "feito", ref: "filtro coalescente trocado em 11/11/2026 (OS 5881). Confirmar com a Supertec se é o kit UD430+ da proposta" },
     { id: "c3dr", cmp: "C3", t: "Dreno automático do secador queimado", sit: "feito", ref: "trocado em 21/09/2026 (OS 2026/3689, garantia)" },
-    { id: "ar",   cmp: "C1,C2,C3", t: "Filtro de ar saturado (14/08 o técnico recomendou não operar o C3 até a troca)", sit: "peca", ref: "propostas 962997, 962998 e 962489" },
+    { id: "ar",   cmp: "C1,C2,C3", t: "Filtro de ar saturado (14/08 o técnico recomendou não operar o C3 até a troca)", sit: "feito", ref: "trocado nos três em 11/11/2026 (OS 5878, 5880 e 5881)" },
     { id: "cub",  cmp: "C1,C2,C3", t: "Filtro do compartimento elétrico saturado em junho. O relatório não registra a troca", sit: "cotar", resp: "Supertec", acao: "Confirmar a troca do filtro do compartimento elétrico (item do Serviço A)" },
     { id: "pod",  cmp: "C1,C2,C3", t: "Qualidade do ar aspirado: poluído, em todos. O manual manda encurtar as limpezas em ambiente com poeira", sit: "cliente", resp: "Manutenção" }
   ],
@@ -129,12 +134,15 @@ window.DATA = {
     { id: "C1", tag: "CPS-14Q001", cor: "#0f172a", modelo: "GA110VSD+", serie: "BQR144249",
       leituras: [
         { data: "2026-10-14", horas: 5406 },
-        { data: "2026-11-04", horas: 5904, carga: 5900, partidas: 340 }
+        { data: "2026-11-04", horas: 5904, carga: 5900, partidas: 340 },
+        { data: "2026-11-10", horas: 6052 }   // OS 5880
       ] },
     { id: "C2", tag: "CPS-14Q002", cor: "#2563eb", modelo: "GA110VSD+", serie: "BQR144248",
+      bloqueio: { motivo: "Ventilador com bobinas abertas; sem mangueira de descarga", ate: ["c2vt", "c2mg"] },
       leituras: [
         { data: "2026-10-14", horas: 5651 },
-        { data: "2026-11-04", horas: 6149, carga: 6148, partidas: 449 }
+        { data: "2026-11-04", horas: 6149, carga: 6148, partidas: 449 },
+        { data: "2026-11-10", horas: 6181 }   // OS 5878
       ] },
     { id: "C3", tag: "CPS-14Q003", cor: "#16a34a", modelo: "GA110VSD+", serie: "BQR145196",
       leituras: [
@@ -165,7 +173,8 @@ window.DATA = {
       { d: "2026-10-21", t: "Fábrica aprova a garantia das peças do C4." },
       { d: "2026-10-27", t: "Reparo por solda da mangueira não resolveu; vai usar a peça de garantia." },
       { d: "2026-10-29", t: "Montado com mangueira prensada. Teste a 100% de carga sem falhas. Fica em stand-by e bloqueado." },
-      { d: "2026-11-03", t: "Mangueira enviada pela fábrica era a errada. Nova previsão de faturamento: 13/11." }
+      { d: "2026-11-03", t: "Mangueira enviada pela fábrica era a errada. Nova previsão de faturamento: 13/11." },
+      { d: "2026-11-11", t: "A Supertec retirou a mangueira de descarga do C2 e a instalou no C4 (OS 5878). Confirmar com a Supertec se o C4 já pode operar e o que falta." }
     ]
   },
 

@@ -41,6 +41,7 @@
   }
   function rate(c, d) {
     if (c.novo) return +(S.c4.horasDia || 0);
+    if (d > parse(D.bloqueioDesde || "2026-11-10") && algumBloq()) return bloq(c) ? 0 : D.horasPorDia;
     var w = weekFor(d);
     if (!w) return d > parse(D.rodizio[D.rodizio.length - 1].fim) ? D.horasPorDia : 0;
     return w.on.indexOf(c.id) >= 0 ? D.horasPorDia : 0;
@@ -117,6 +118,10 @@
     var v = S.exec[t.id + ":" + c.id] || (D.execInicial || {})[t.id + ":" + c.id];
     return v ? parse(v) : null;
   }
+  function achById(id) { return (D.achados || []).filter(function (a) { return a.id === id; })[0]; }
+  // compressor bloqueado até resolver os achados listados em c.bloqueio.ate
+  function bloq(c) { return !!c.bloqueio && c.bloqueio.ate.some(function (id) { var a = achById(id); return a && !achDone(a); }); }
+  function algumBloq() { return D.compressores.some(bloq); }
   function achDone(a) { return a.sit === "feito" || !!S.exec["ach:" + a.id]; }
   function achCmp(a) { return a.cmp.split(","); }
   // sem execução registrada: não dá para afirmar que está em dia, então vence hoje
@@ -129,8 +134,8 @@
     // 0) achados do relatório de 4000 h que ainda não têm proposta nem solução
     (D.achados || []).forEach(function (a) {
       if (!a.acao || achDone(a)) return;
-      out.push({ k: "ach", when: today, lbl: "Até", what: a.acao, ids: achCmp(a), who: a.resp, link: "#achados",
-        why: "Achado do relatório de junho: " + a.t + ".", act: { t: "ach", id: a.id } });
+      out.push({ k: "ach", urg: !!a.urg, when: today, lbl: "Até", what: a.acao, ids: achCmp(a), who: a.resp, link: "#achados",
+        why: "Achado da Supertec: " + a.t + ".", act: { t: "ach", id: a.id } });
     });
     // 1) peças pendentes (corretivas)
     var grp = {};
@@ -191,7 +196,7 @@
       }
       break;
     }
-    out.sort(function (a, b) { return (a.when - b.when) || (ord[a.k] - ord[b.k]); });
+    out.sort(function (a, b) { return ((b.urg ? 1 : 0) - (a.urg ? 1 : 0)) || (a.when - b.when) || (ord[a.k] - ord[b.k]); });
     return out;
   }
 
@@ -231,10 +236,12 @@
       if (c.novo && !c4St("lib").done) {
         chip = '<span class="chip warn">STAND-BY</span>'; hrs = "—";
         linha = "Aguarda mangueira (" + brs(parse(D.c4.previsao)) + ")";
+      } else if (bloq(c)) {
+        chip = '<span class="chip bad">BLOQUEADO</span>'; hrs = (sim.estimado ? "~" : "") + fmtN(sim.horasHoje) + " h"; linha = c.bloqueio.motivo;
       } else if (!sim) {
         chip = '<span class="chip off">SEM LEITURA</span>'; hrs = "—"; linha = "Lance a leitura";
       } else {
-        var lig = w ? w.on.indexOf(c.id) >= 0 : true;
+        var lig = algumBloq() ? true : w ? w.on.indexOf(c.id) >= 0 : true;
         chip = lig ? '<span class="chip on">LIGADO</span>' : '<span class="chip off">DESCANSA</span>';
         hrs = (sim.estimado ? "~" : "") + fmtN(sim.horasHoje) + " h";
         linha = sim.data8000 ? "8000 h em " + brs(sim.data8000) + " · faltam " + fmtN(Math.max(0, D.metaHoras - sim.horasHoje)) + " h" : "—";
@@ -248,7 +255,7 @@
   var SIT = { peca: ["Em proposta de peças", "off"], cotar: ["Falta cotação", "warn"], cliente: ["Ação da RRP", "warn"], feito: ["Resolvido", "on"] };
   function renderAchados() {
     var A = D.achados || [], aberto = 0;
-    $("#achadosBox").innerHTML = '<p class="muted">Relatórios Supertec da visita de 17 a 19/06/2026 (4000 h) e OS 2026/2789 e 2026/3689. O Serviço A consta como feito no C1 e no C2; no C3 a visita foi só corretiva. O contador do módulo não foi zerado e segue correndo.</p><div class="lst">' +
+    $("#achadosBox").innerHTML = '<p class="muted">Relatórios Supertec de 17 a 19/06/2026 (4000 h), visita de 10 e 11/11/2026 (OS 5878, 5880 e 5881) e OS 2026/2789 e 2026/3689. O Serviço A consta como feito no C1 e no C2; no C3 a visita foi só corretiva. O contador do módulo não foi zerado e segue correndo.</p><div class="lst">' +
       A.map(function (a) {
         var feito = achDone(a), s = feito ? SIT.feito : SIT[a.sit];
         if (!feito && a.acao) aberto++;
@@ -366,7 +373,12 @@
 
   /* ---------- peças pendentes ---------- */
   var brl = function (n) { return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); };
-  function pecaSt(id, eid) { return ((S.pecas[id] || {})[eid]) || {}; }
+  function pecaSt(id, eid) {
+    var s = (S.pecas[id] || {})[eid];
+    if (s) return s;
+    var ex = (D.pecasExec || {})[id];   // peças já instaladas conforme as OS da Supertec
+    return ex ? { done: true, date: eid === "ins" ? ex : "" } : {};
+  }
   function setPeca(id, eid, patch) { S.pecas[id] = S.pecas[id] || {}; S.pecas[id][eid] = Object.assign({}, S.pecas[id][eid], patch); save(); }
   function pecasVencidas() {
     return D.pecas.filter(function (q) { return !D.pecasValidas && parse(q.validade) < today && !pecaSt(q.id, "ped").done; });
@@ -467,7 +479,8 @@
   var mostrarPassadas = false;
   function renderRod() {
     var base = D.compressores.filter(function (c) { return !c.novo; });
-    $("#rod").innerHTML = D.rodizio.map(function (w) {
+    var avisoRod = algumBloq() ? '<div class="note" style="margin:0 0 10px"><b>Rodízio suspenso.</b> ' + D.compressores.filter(bloq).map(tagC).join(", ") + ' está bloqueado; a projeção considera os demais compressores ligados direto até a liberação. As semanas abaixo são o plano antigo.</div>' : "";
+    $("#rod").innerHTML = avisoRod + D.rodizio.map(function (w) {
       var past = parse(w.fim) < today, now = today >= parse(w.ini) && today <= parse(w.fim);
       var pills = base.map(function (c) {
         var on = w.on.indexOf(c.id) >= 0;
