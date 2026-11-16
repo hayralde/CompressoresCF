@@ -344,7 +344,7 @@
 
   function renderTabs() {
     if (!tabSel) tabSel = INF[0].c.id;
-    $("#tabs").innerHTML = INF.map(function (inf) {
+    $("#tabs").innerHTML = INF.filter(function (inf) { return !inf.c.novo; }).map(function (inf) {
       return '<button class="tab" role="tab" data-tab="' + inf.c.id + '" aria-selected="' + (inf.c.id === tabSel) + '"><i class="dot" style="--cc:var(--c' + (inf.idx + 1) + ')"></i>' + esc(inf.c.tag) + '</button>';
     }).join("");
   }
@@ -352,7 +352,10 @@
     var inf = INF.filter(function (i) { return i.c.id === tabSel; })[0];
     var p = prazos(inf), el = $("#etapas");
     if (!p) {
-      el.innerHTML = '<div class="card waiting"><b>' + esc(inf.c.tag) + ' ainda não tem projeção de 8000 h.</b><p class="muted">Está em stand-by, aguardando a mangueira de garantia. Quando for liberado, lance a leitura do horímetro e as horas por dia na seção do compressor 04, e o plano de prazos aparece aqui.</p><div class="btns"><a class="btn ghost" href="#c4">Ver pendências do C4</a></div></div>';
+      var bl = bloq(inf.c), hh = inf.sim ? fmtN(inf.sim.horasHoje) : "—";
+      el.innerHTML = '<div class="card waiting"><b>' + esc(inf.c.tag) + (bl ? ' está parado.' : ' ainda não tem projeção de 8000 h.') + '</b><p class="muted">' +
+        (bl ? esc(inf.c.bloqueio.motivo) + '. Está com ' + hh + ' h e faltam ' + fmtN(Math.max(0, D.metaHoras - (inf.sim ? inf.sim.horasHoje : 0))) + ' h para o Serviço B. Parado, ele não acumula horas, então não há data de 8000 h. A projeção volta quando o C2 for liberado.' : 'Lance a leitura do horímetro em Ferramentas.') +
+        '</p>' + (bl ? '<div class="btns"><a class="btn ghost" href="#achados">Ver o que falta</a></div>' : '') + '</div>';
       return;
     }
     var prox = proxima(p);
@@ -416,6 +419,29 @@
 
   /* ---------- compressor 04 ---------- */
   function c4St(id) { return ((S.c4.itens || {})[id]) || {}; }
+  // plano de manutenção do C4 (equipamento novo): começa na partida; 1º serviço = A (4000 h ou 1 ano)
+  function dataHoras(sim, alvo) {
+    if (!sim) return null;
+    for (var i = 0; i < sim.curva.length; i++) if (sim.curva[i].h >= alvo) return sim.curva[i].d;
+    return null;
+  }
+  function c4Plano() {
+    var inf = INF.filter(function (i) { return i.c.novo; })[0], sim = inf && inf.sim, M = D.manual, st = S.c4.start || "";
+    var linhas = M.servicos.filter(function (s) { return s.id !== "D"; }).map(function (s, k) {
+      var anos = parseInt(s.tempo, 10), lim = st ? (function () { var d = parse(st); return new Date(d.getFullYear() + anos, d.getMonth(), d.getDate()); })() : null;
+      var dh = dataHoras(sim, s.horas), h = sim ? sim.horasHoje : null, partes = [];
+      partes.push(h == null ? "sem leitura" : "faltam " + fmtN(Math.max(0, s.horas - h)) + " h");
+      partes.push(dh ? "por horas: " + br(dh) : "por horas: informe as horas por dia");
+      partes.push(lim ? "por tempo: " + br(lim) : "por tempo: depende da data da partida");
+      var prim = [dh, lim].filter(Boolean).sort(function (a, b) { return a - b; })[0];
+      return '<div class="sv"><div><b>Serviço ' + s.id + '</b> <small>' + fmtN(s.horas) + ' h ou ' + s.tempo + (k === 0 ? ' · primeiro serviço' : '') + '</small></div>' +
+        '<div>' + (prim ? '<span class="chip off">próx.: ' + br(prim) + '</span>' : '<span class="chip off">sem data</span>') + '<small> · ' + partes.join(" · ") + '</small></div></div>';
+    }).join("");
+    return '<div class="card" style="margin-bottom:12px"><h3>Plano de manutenção do C4 <small>(equipamento novo)</small></h3>' +
+      '<p class="muted">O plano do C4 começa na partida e é separado dos outros três. O primeiro serviço é o <b>Serviço A</b>, aos 4.000 h ou 1 ano da partida, o que vier primeiro. Depois vem o B, aos 8.000 h ou 2 anos. Fonte: ' + esc(M.fonte) + '. Confirmar com a Supertec se há inspeção inicial ou condição de garantia.</p>' +
+      '<label>Data da partida (liberação para operação)<input type="date" data-c4s value="' + esc(st) + '"></label>' +
+      '<div class="svc" style="margin-top:10px">' + linhas + '</div></div>';
+  }
   function renderC4() {
     var c4 = D.c4;
     var lista = c4.pendencias.map(function (p) {
@@ -427,7 +453,7 @@
     }).join("");
     var dias = diff(parse(c4.previsao), today);
     var prev = dias >= 0 ? 'faltam ' + dias + ' dias' : 'passou há ' + (-dias) + ' dias, confirmar com o fornecedor';
-    $("#c4Box").innerHTML = '<div class="grid2"><div class="card"><div class="cmp-top"><h3 style="margin:0">' + esc(D.compressores[3].tag) + '</h3><span class="chip warn">' + esc(c4.status.toUpperCase()) + '</span></div>' +
+    $("#c4Box").innerHTML = c4Plano() + '<div class="grid2"><div class="card"><div class="cmp-top"><h3 style="margin:0">' + esc(D.compressores[3].tag) + '</h3><span class="chip warn">' + esc(c4.status.toUpperCase()) + '</span></div>' +
       '<p class="muted" style="margin-top:10px">' + esc(c4.resumo) + '</p>' +
       '<div class="note" style="margin:0 0 12px"><b>Mangueira original:</b> faturamento previsto em ' + br(parse(c4.previsao)) + ' (' + prev + ').</div>' +
       '<h3>Pendências para liberar</h3><div class="psteps">' + lista + '</div>' +
@@ -605,6 +631,7 @@
     else if (t.dataset.pcampo) { var q = t.dataset.pcampo.split(":"); setPeca(q[0], q[1], { campo: t.value }); }
     else if (t.dataset.campo) setEtapa(tabSel, t.dataset.campo, { campo: t.value });
     else if (t.dataset.nota) setEtapa(tabSel, t.dataset.nota, { nota: t.value });
+    else if (t.dataset.c4s !== undefined) { S.c4.start = t.value; save(); renderAll(); }
     else if (t.dataset.c4h !== undefined) { S.c4.horasDia = Math.max(0, Math.min(24, +t.value || 0)); save(); renderAll(); }
   });
   document.addEventListener("submit", function (e) {
