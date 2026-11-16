@@ -211,8 +211,80 @@
     return '<div class="ar ' + cls + '"><div class="ar-d"><b>' + brs(it.when) + '</b><small>' + dTxt(dd) + '</small></div>' +
       '<div class="ar-m"><div class="w">' + esc(it.what) + '</div><div class="m">' + tagsHtml(it.ids) + ' <span>' + esc(it.who) + '</span></div></div>' + btnAct(i, false) + '</div>';
   }
+  /* ---------- abas por compressor: linha do tempo ---------- */
+  var KIND = { serv: "Serviço", corr: "Corretiva", os: "Inspeção", peca: "Peças", obs: "Registro", leit: "Leitura", feito: "Feito no site", rot: "Rotina", etapa: "Revisão 8000 h", ach: "Achado", c4: "Pendência", peca2: "Peças" };
+  function agIdx(it) { return AG.indexOf(it); }
+  function eventosCmp(c, inf) {
+    var fut = [], pas = [], M = D.manual, tg = tagC(c);
+    // a vir
+    AG.forEach(function (it, i) {
+      if (it.k === "rod" || it.k === "c4" || it.ids.indexOf(c.id) < 0) return;
+      fut.push({ d: it.when, t: it.what, who: it.who, k: it.k === "peca" ? "peca2" : it.k, urg: it.urg, btn: btnAct(i, false) });
+    });
+    if (!c.novo) {
+      var p = prazos(inf);
+      if (p) {
+        p.forEach(function (x) {
+          if (x.st.done) { pas.push({ d: x.st.date ? parse(x.st.date) : x.dl, t: x.e.nome + " (Serviço B)", k: "etapa" }); return; }
+          var jaNaAgenda = AG.some(function (it) { return it.k === "etapa" && it.act.ids.indexOf(c.id + ":" + x.e.id) >= 0; });
+          if (!jaNaAgenda) fut.push({ d: x.dl, t: x.e.nome + " (Serviço B)", who: x.e.resp, k: "etapa" });
+        });
+        if (inf.sim && inf.sim.data8000) fut.push({ d: inf.sim.data8000, t: "Serviço B: 8000 h previstas", who: "Supertec", k: "serv", marco: true });
+      } else if (inf.sim) {
+        fut.push({ d: null, t: "Serviço B (8000 h): sem data" + (bloq(c) ? " enquanto o compressor estiver parado" : ""), k: "serv" });
+      }
+      if ((M.soCorretiva || {})["A:" + c.id] && !svcDate("A", c.id)) fut.push({ d: today, t: "Confirmar com a Supertec o Serviço A (4.000 h): sem registro, a visita de junho foi só corretiva", who: "PCM", k: "serv" });
+    } else {
+      D.c4.pendencias.forEach(function (pd) {
+        var s = c4St(pd.id);
+        if (s.done) pas.push({ d: s.date ? parse(s.date) : today, t: pd.nome, k: "c4" });
+        else fut.push({ d: pd.id === "mang" ? parse(D.c4.previsao) : today, t: pd.nome, who: pd.resp, k: "c4", chk: pd.id });
+      });
+      var st = S.c4.start, sim = inf.sim, dh = dataHoras(sim, 4000), lim = st ? (function () { var d = parse(st); return new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()); })() : null;
+      var prim = [dh, lim].filter(Boolean).sort(function (a, b) { return a - b; })[0];
+      fut.push({ d: prim || null, t: "Primeiro serviço: Serviço A (4.000 h ou 1 ano da partida)" + (prim ? "" : ". Sem data até informar a partida e as horas por dia"), who: "Supertec", k: "serv", marco: true });
+    }
+    // feito
+    (D.historico[c.id] || []).forEach(function (h) { pas.push({ d: parse(h.d), t: h.t, k: h.k, f: h.f }); });
+    if (c.novo) D.c4.historico.forEach(function (h) { pas.push({ d: parse(h.d), t: h.t, k: "obs" }); });
+    leituras(c).forEach(function (r) { pas.push({ d: parse(r.data), t: "Leitura do horímetro: " + fmtN(r.horas) + " h", k: "leit" }); });
+    (S.log || []).forEach(function (x) { if (x.t.indexOf(tg) >= 0) pas.push({ d: parse(x.d), t: x.t, k: "feito" }); });
+    fut.sort(function (a, b) { return ((b.urg ? 1 : 0) - (a.urg ? 1 : 0)) || (a.d === null) - (b.d === null) || (a.d - b.d); });
+    pas.sort(function (a, b) { return b.d - a.d; });
+    return { fut: fut, pas: pas };
+  }
+  function tlLi(e, fut) {
+    var dd = e.d ? diff(e.d, today) : null, cls = fut ? (e.urg ? "fut urg" : dd !== null && dd < 0 ? "fut bad" : "fut") : "pas";
+    var btn = e.btn || (e.chk ? '<button class="btn sm" data-c4chk="' + e.chk + '">✓ Feito</button>' : "");
+    return '<li class="' + cls + ' k-' + e.k + '"><div class="tl2-d"><b>' + (e.d ? br(e.d) : "sem data") + '</b>' + (fut && dd !== null ? '<small>' + dTxt(dd) + '</small>' : '') + '</div>' +
+      '<div class="tl2-b"><span class="tl2-k">' + (KIND[e.k] || "") + '</span><div class="tl2-t">' + esc(e.t) + '</div>' +
+      '<div class="tl2-m">' + (e.who ? esc(e.who) : "") + (e.f ? '<span>' + esc(e.f) + '</span>' : "") + '</div>' + (btn ? '<div class="tl2-a">' + btn + '</div>' : "") + '</div></li>';
+  }
+  function renderCmps() {
+    var w = weekFor(today);
+    INF.forEach(function (inf) {
+      var c = inf.c, sim = inf.sim, ev = eventosCmp(c, inf), cor = "var(--c" + (inf.idx + 1) + ")", chip, hrs, sub;
+      if (c.novo && !c4St("lib").done) { chip = '<span class="chip warn">STAND-BY</span>'; hrs = "—"; sub = "Equipamento novo, ainda não partiu"; }
+      else if (bloq(c)) { chip = '<span class="chip bad">BLOQUEADO</span>'; hrs = sim ? (sim.estimado ? "~" : "") + fmtN(sim.horasHoje) : "—"; sub = c.bloqueio.motivo; }
+      else if (!sim) { chip = '<span class="chip off">SEM LEITURA</span>'; hrs = "—"; sub = "Lance a leitura"; }
+      else {
+        var lig = algumBloq() ? true : w ? w.on.indexOf(c.id) >= 0 : true;
+        chip = lig ? '<span class="chip on">LIGADO</span>' : '<span class="chip off">DESCANSA</span>';
+        hrs = (sim.estimado ? "~" : "") + fmtN(sim.horasHoje);
+        sub = sim.data8000 ? "8000 h em " + br(sim.data8000) + " · faltam " + fmtN(Math.max(0, D.metaHoras - sim.horasHoje)) + " h" : "Sem data de 8000 h";
+      }
+      var prox = ev.fut[0];
+      var proxHtml = prox ? '<div class="card prox"><span class="sw">PRÓXIMO</span><div class="w">' + esc(prox.t) + '</div><div class="q3"><div><span>QUANDO</span><b>' + (prox.d ? br(prox.d) : "sem data") + '</b>' + (prox.d ? '<em>' + relTxt(diff(prox.d, today)) + '</em>' : '') + '</div>' + (prox.who ? '<div><span>QUEM</span><b>' + esc(prox.who) + '</b></div>' : '') + '</div></div>' : '<div class="card prox"><span class="sw">PRÓXIMO</span><div class="w">Nada pendente</div></div>';
+      $("#cmp-" + c.id).innerHTML = '<div class="card cmp-hd" style="--cc:' + cor + '"><div class="cmp-top"><span class="badge"><i class="dot" style="--cc:' + cor + '"></i><span class="tag">' + esc(c.tag) + '</span></span>' + chip + '</div>' +
+        '<div class="hrs mono">' + hrs + ' <small>h</small></div><small class="muted">' + esc(c.modelo) + (c.serie && c.serie !== "—" ? ' · ' + esc(c.serie) : '') + ' · ' + esc(sub) + '</small></div>' + proxHtml +
+        '<h3 class="tl2-h">Linha do tempo</h3><ol class="tl2">' + ev.fut.slice().reverse().map(function (e) { return tlLi(e, true); }).join("") +
+        '<li class="hoje"><b>Hoje · ' + br(today) + '</b></li>' + ev.pas.map(function (e) { return tlLi(e, false); }).join("") + '</ol>';
+    });
+  }
+
   function renderTopo() {
     AG = agenda();
+    renderCmps();
     var el = $("#hero"), sg = $("#seguinte");
     if (!AG.length) { el.innerHTML = '<div class="hero"><div class="hero-k">TUDO EM DIA</div><h1>Nenhuma ação pendente agora</h1></div>'; sg.innerHTML = ""; return; }
     var h = AG[0], dd = diff(h.when, today), cls = dd < 0 ? "bad" : dd <= 7 ? "warn" : "";
@@ -330,7 +402,7 @@
     $("#bPecas").textContent = np ? np + " pendente" + (np > 1 ? "s" : "") : "concluídas";
     $("#bPecas").className = "bdg" + (pecasVencidas().length ? " bad" : "");
     var n4 = D.c4.pendencias.filter(function (p) { return !c4St(p.id).done; }).length;
-    $("#bC4").textContent = n4 ? n4 + " pendências" : "liberado";
+    if ($("#bC4")) $("#bC4").textContent = n4 ? n4 + " pendências" : "liberado";
     var prox = null;
     INF.forEach(function (inf) { var p = prazos(inf); var n = p && proxima(p); if (n && (!prox || n.dl < prox.dl)) prox = n; });
     $("#bFluxo").textContent = prox ? "próx.: " + brs(prox.dl) : "—";
@@ -456,10 +528,8 @@
     $("#c4Box").innerHTML = c4Plano() + '<div class="grid2"><div class="card"><div class="cmp-top"><h3 style="margin:0">' + esc(D.compressores[3].tag) + '</h3><span class="chip warn">' + esc(c4.status.toUpperCase()) + '</span></div>' +
       '<p class="muted" style="margin-top:10px">' + esc(c4.resumo) + '</p>' +
       '<div class="note" style="margin:0 0 12px"><b>Mangueira original:</b> faturamento previsto em ' + br(parse(c4.previsao)) + ' (' + prev + ').</div>' +
-      '<h3>Pendências para liberar</h3><div class="psteps">' + lista + '</div>' +
       '<label style="margin-top:14px">Horas por dia previstas (para projeção, depois de liberado)<input type="number" min="0" max="24" inputmode="numeric" value="' + (S.c4.horasDia || 0) + '" data-c4h></label>' +
-      '<p class="muted" style="margin-top:6px">Lance a leitura do horímetro em Ferramentas. Sem leitura e sem horas/dia, não há projeção de 8000 h.</p></div>' +
-      '<div class="card"><h3>Linha do tempo</h3><div class="tls">' + hist + '</div></div></div>';
+      '<p class="muted" style="margin-top:6px">Lance a leitura do horímetro em Geral · Ferramentas. Sem leitura e sem horas/dia, não há projeção.</p></div></div>';
   }
 
   /* ---------- gráfico ---------- */
@@ -589,9 +659,19 @@
     logAdd(it.what + " (" + it.ids.map(function (id) { return tagC(cmpById(id)); }).join(", ") + ")");
     save(); renderAll();
   }
-  function abrir(h) { var el = h && h.length > 1 ? document.getElementById(h.slice(1)) : null; if (el && el.tagName === "DETAILS") el.open = true; }
+  function setMt(id) {
+    [].forEach.call(document.querySelectorAll(".mp"), function (p) { p.classList.toggle("on", p.dataset.mp === id); });
+    [].forEach.call(document.querySelectorAll("#mnav a"), function (a) { a.classList.toggle("on", a.dataset.mt === id); });
+  }
+  function abrir(h) {
+    var el = h && h.length > 1 ? document.getElementById(h.slice(1)) : null;
+    if (!el) return;
+    var p = el.closest(".mp"); if (p) setMt(p.dataset.mp);
+    if (el.tagName === "DETAILS") el.open = true;
+  }
   document.addEventListener("click", function (e) {
-    var a = e.target.closest('a[href^="#"]'); if (a) abrir(a.getAttribute("href"));
+    var a = e.target.closest('a[href^="#"]');
+    if (a) { abrir(a.getAttribute("href")); if (a.dataset.mt) { e.preventDefault(); window.scrollTo(0, 0); } }
     var b = e.target.closest("[data-af]"); if (b) doAct(AG[+b.dataset.af]);
   });
   window.addEventListener("hashchange", function () { abrir(location.hash); });

@@ -20,19 +20,20 @@
         <small id="hoje">—</small>
       </div>
     </div>
-    <nav class="nav" aria-label="Seções">
-      <a href="#resumo">Agora</a>
-      <a href="#plano">Cronograma</a>
-      <a href="#pecas">Peças</a>
-      <a href="#c4">Compressor 4</a>
-      <a href="#fluxo">Revisão 8000 h</a>
-      <a href="#grafico">Horas e rodízio</a>
-      <a href="#ferramentas">Ferramentas</a>
+    <nav class="nav" id="mnav" aria-label="Abas">
+      <a href="#resumo" data-mt="resumo" class="on">Agora</a>
+      <a href="#pC1" data-mt="C1">C1</a>
+      <a href="#pC2" data-mt="C2">C2</a>
+      <a href="#pC3" data-mt="C3">C3</a>
+      <a href="#pC4" data-mt="C4">C4</a>
+      <a href="#geral" data-mt="geral">Geral</a>
     </nav>
   </div>
 </header>
 
 <main class="wrap">
+
+  <div class="mp on" data-mp="resumo">
 
   <section id="resumo" class="sec">
     <div id="hero"></div>
@@ -40,6 +41,15 @@
     <div id="estado" class="estado"></div>
   </section>
 
+  </div>
+
+  <section class="mp" data-mp="C1" id="pC1"><div id="cmp-C1"></div></section>
+  <section class="mp" data-mp="C2" id="pC2"><div id="cmp-C2"></div></section>
+  <section class="mp" data-mp="C3" id="pC3"><div id="cmp-C3"></div></section>
+  <section class="mp" data-mp="C4" id="pC4"><div id="cmp-C4"></div><div id="c4Box"></div></section>
+
+  <div class="mp" data-mp="geral" id="geral">
+  <h2 class="h-list" style="margin-top:4px">Geral · todos os compressores</h2>
   <details id="plano" class="blk">
     <summary><span>Cronograma de manutenção <small>manual Atlas Copco + rotinas PMOC</small></span><b class="bdg" id="bPlano"></b></summary>
     <div class="blk-b" id="planoBox"></div>
@@ -53,11 +63,6 @@
   <details id="achados" class="blk">
     <summary><span>Achados da última revisão <small>(relatório de 4000 h, jun/2026)</small></span><b class="bdg" id="bAchados"></b></summary>
     <div class="blk-b" id="achadosBox"></div>
-  </details>
-
-  <details id="c4" class="blk">
-    <summary><span>Compressor 04 <small>(CPS-14Q004, em stand-by)</small></span><b class="bdg" id="bC4"></b></summary>
-    <div class="blk-b" id="c4Box"></div>
   </details>
 
   <details id="fluxo" class="blk">
@@ -140,10 +145,12 @@
     </div>
   </details>
 
+  </div>
+
 </main>
 
 <footer class="wrap foot">
-  Leituras de 04/11/2026. Projeção: 24 h/dia por compressor ligado. Cronograma do fabricante: manual Atlas Copco, seção 6.1.
+  Última leitura: 10/11/2026. Projeção: 24 h/dia por compressor ligado. Cronograma do fabricante: manual Atlas Copco, seção 6.1.
 </footer>
 
 <script src="data.js"></script>

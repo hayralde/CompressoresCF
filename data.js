@@ -101,6 +101,29 @@ window.DATA = {
   // Execuções comprovadas pelos relatórios de 4000 h (limpeza dos resfriadores: "Realizado" em 19/06/2026 nos 3 compressores).
   execInicial: { "tri:C1": "2026-06-19", "tri:C2": "2026-06-19", "tri:C3": "2026-06-19" },
 
+  // Linha do tempo: o que foi executado, por compressor. k: serv = serviço preventivo, corr = corretiva, os = OS/inspeção, peca = proposta de peças, obs = observação.
+  historico: {
+    C1: [
+      { d: "2026-06-19", k: "serv", t: "Serviço A (4000 h) feito pela Supertec a 2.635 h: filtros de ar e de óleo, limpeza dos resfriadores. Corretiva: contatos do dreno do secador limpos e voltou a operar; dreno do trocador de calor queimado e Smartbox queimada apontados", f: "Relatório OS 5224" },
+      { d: "2026-08-17", k: "peca", t: "Proposta 962997 emitida: dreno automático, kit Smartbox e filtro de ar", f: "Proposta 962997" },
+      { d: "2026-11-05", k: "obs", t: "Desarme por temperatura do elemento", f: "Relatório OS 5880" },
+      { d: "2026-11-11", k: "corr", t: "Trocados filtro de ar, dreno automático do trocador de calor e Smartbox; antena conectada à rede. Deixado em operação, a 108 °C com ambiente de 40 °C", f: "OS 5880" }
+    ],
+    C2: [
+      { d: "2026-06-19", k: "serv", t: "Serviço A (4000 h) feito pela Supertec a 3.335 h: filtros de ar e de óleo, limpeza dos resfriadores. Corretiva: disjuntor geral desarmava acima de 95%, então a rotação máxima foi limitada a 90%; O-ring da mangueira de descarga vedado com silicone", f: "Relatório OS 5276" },
+      { d: "2026-08-17", k: "peca", t: "Proposta 962998 emitida: filtro de ar", f: "Proposta 962998" },
+      { d: "2026-11-10", k: "corr", t: "Desarme por temperatura do elemento (120 °C). Ventilador com bobinas abertas, mangueira de descarga retirada e instalada no C4. Deixado bloqueado e fora de operação. Filtro de ar trocado", f: "OS 5878" }
+    ],
+    C3: [
+      { d: "2026-06-19", k: "corr", t: "Visita corretiva (não foi o Serviço A): defletor de óleo solto e trincado, chapa de inox solta no reservatório, arraste de óleo. Defletor soldado pelo cliente; Supertec recomendou trocar separador e defletor. Filtro coalescente saturado e dreno queimado apontados", f: "Relatório OS 5223" },
+      { d: "2026-08-13", k: "peca", t: "Proposta 962489 emitida: filtro de ar, kit UD430+ e dreno (garantia)", f: "Proposta 962489" },
+      { d: "2026-08-14", k: "os", t: "Inspeção: filtro de ar saturado por desarme; recomendado não operar até a troca", f: "OS 2026/2789" },
+      { d: "2026-09-21", k: "corr", t: "Dreno automático do secador trocado (garantia)", f: "OS 2026/3689" },
+      { d: "2026-11-11", k: "corr", t: "Trocados filtro de ar e filtro coalescente. Deixado em operação", f: "OS 5881" }
+    ],
+    C4: []   // o histórico do C4 vem de c4.historico
+  },
+
   // Achados do relatório de 4000 h (jun/2026) e das OS 2026/2789 e 2026/3689.
   // sit: "peca" = já está numa proposta de peças · "cotar" = falta pedir cotação · "cliente" = ação da RRP · "feito" = resolvido
   // Visita de 10 e 11/11/2026 (OS Supertec 5878 C2, 5880 C1, 5881 C3): filtros de ar trocados nos três.
