@@ -145,7 +145,7 @@ window.DATA = {
   pecasExec: { "962997": "2026-11-11", "962998": "2026-11-11", "962489": "2026-11-11" },
   achados: [
     { id: "c2vt", cmp: "C2", urg: true, t: "Ventilador principal com bobinas abertas; o compressor desarmou por temperatura (120 °C) e está BLOQUEADO e fora de operação desde 11/11 (OS 5878)", sit: "peca", pecaId: "980739", ref: "proposta 980739: R$ 55.130, entrega em 10 dias, válida até 13/12/2026. Aguarda aprovação, pedido e instalação" },
-    { id: "c2mg", cmp: "C2", t: "A mangueira de descarga do C2 foi retirada e instalada no compressor 04. O C2 está sem ela", sit: "cotar", resp: "Supertec", acao: "Definir como o C2 recebe mangueira de descarga (a do C2 está no C4) e trocar o O-ring" },
+    { id: "c2mg", cmp: "C2", t: "A mangueira de descarga do C2 foi retirada e instalada no compressor 04. O C2 está sem ela", sit: "cotar", resp: "Supertec", acao: "Mangueira do C2 está no C4. A da garantia (fábrica) ainda não tem data; definir com a Supertec se o C2 recebe mangueira nova ou a devolvida, e trocar o O-ring" },
     { id: "q15", cmp: "C4", t: "O C4 desarmou por sobrecarga do ventilador (11/11). O ajuste do relé Q15 estava em 5 A e foi para 6 A; o manual pede 8,0 A", sit: "cliente", resp: "Elétrica / Supertec", acao: "Conferir e ajustar o relé Q15 do ventilador do C4 para 8,0 A conforme o manual" },
     { id: "tmp",  cmp: "C1,C2", t: "Desarmes por temperatura do elemento: C1 em 05/11 (trabalhando a 108 °C com ambiente de 40 °C) e C2 em 10/11 (120 °C). Resfriadores e ar sujos", sit: "cliente", resp: "Manutenção", ref: "em 06/11 o radiador do C1 e do C2 estava muito sujo; a limpeza trimestral está atrasada" },
     { id: "c1sb", cmp: "C1", t: "Smartbox queimada e dreno automático do trocador de calor queimado", sit: "feito", ref: "trocados em 11/11/2026 (OS 5880); antena Smartbox conectada à rede" },
@@ -194,12 +194,12 @@ window.DATA = {
   // Situação do compressor 04 (fonte: grupo com o fornecedor, até 03/11/2026)
   c4: {
     status: "Em operação com mangueira provisória",
-    resumo: "Colocado no sistema depois de 05/11, com a mangueira de descarga provisória (a Supertec confirmou que pode operar com acompanhamento constante). Em 11/11 a Supertec instalou nele a mangueira de descarga do C2. A mangueira original da garantia tinha faturamento previsto para 13/11.",
-    previsao: "2026-11-13",
+    resumo: "Colocado no sistema depois de 05/11, com a mangueira de descarga provisória (a Supertec confirmou que pode operar com acompanhamento constante). Em 11/11 a Supertec instalou nele a mangueira de descarga do C2. A mangueira original da garantia será entregue pela fábrica, ainda sem data.",
+    previsao: "",   // sem data: a fábrica enviará a mangueira por garantia, ainda sem prazo (informado pelo PCM)
     inicio: "2026-11-06",   // entrada em operação, informada pelo PCM
     feitos: { lib: { done: true, date: "2026-11-06" } },
     pendencias: [
-      { id: "mang",  nome: "Receber a mangueira de descarga original (garantia)", resp: "Fábrica / Supertec", nota: "Faturamento previsto em 13/11. A primeira enviada pela fábrica veio errada." },
+      { id: "mang",  nome: "Receber a mangueira de descarga original (garantia)", resp: "Fábrica / Supertec", nota: "Entrega por garantia, ainda sem data. A primeira enviada pela fábrica veio errada. Enquanto não chega, o C4 usa a mangueira que era do C2." },
       { id: "supo",  nome: "Receber o suporte do motor e elemento definitivo (garantia)", resp: "Fábrica / Supertec", nota: "Hoje está com reparo paliativo (soldado)." },
       { id: "inst",  nome: "Instalar a mangueira original e prender o motor ao chassi", resp: "Supertec", nota: "Com a mangueira provisória não foi possível fixar o motor." },
       { id: "oleo",  nome: "Repor o óleo / lubrificação", resp: "Supertec", nota: "Era o que faltava após o teste de 29/10." },

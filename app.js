@@ -157,7 +157,7 @@
     });
     // 2) compressor 4
     var p4 = D.c4.pendencias.filter(function (p) { return !c4St(p.id).done; })[0];
-    if (p4) out.push({ k: "c4", when: p4.id === "mang" ? parse(D.c4.previsao) : today, lbl: "Previsto", what: p4.nome, ids: ["C4"], who: p4.resp, why: p4.nota, link: "#c4", act: { t: "c4", id: p4.id } });
+    if (p4) out.push({ k: "c4", when: p4.id === "mang" && D.c4.previsao ? parse(D.c4.previsao) : today, lbl: "Previsto", what: p4.nome, ids: ["C4"], who: p4.resp, why: p4.nota, link: "#c4", act: { t: "c4", id: p4.id } });
     // 3) revisão de 8000 h (serviço B)
     var eg = {};
     INF.forEach(function (inf) {
@@ -239,7 +239,7 @@
       D.c4.pendencias.forEach(function (pd) {
         var s = c4St(pd.id);
         if (s.done) pas.push({ d: s.date ? parse(s.date) : today, t: pd.nome, k: "c4" });
-        else fut.push({ d: pd.id === "mang" ? parse(D.c4.previsao) : today, t: pd.nome, who: pd.resp, k: "c4", chk: pd.id });
+        else fut.push({ d: pd.id === "mang" && D.c4.previsao ? parse(D.c4.previsao) : today, t: pd.nome, who: pd.resp, k: "c4", chk: pd.id });
       });
       var st = S.c4.start || D.c4.inicio, sim = inf.sim, dh = dataHoras(sim, 4000), lim = st ? (function () { var d = parse(st); return new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()); })() : null;
       var prim = [dh, lim].filter(Boolean).sort(function (a, b) { return a - b; })[0];
@@ -309,7 +309,7 @@
       var c = inf.c, sim = inf.sim, cor = "var(--c" + (inf.idx + 1) + ")", chip, linha, hrs;
       if (c.novo && !c4St("lib").done) {
         chip = '<span class="chip warn">STAND-BY</span>'; hrs = "—";
-        linha = "Aguarda mangueira (" + brs(parse(D.c4.previsao)) + ")";
+        linha = "Aguarda mangueira original (" + (D.c4.previsao ? brs(parse(D.c4.previsao)) : "sem data") + ")";
       } else if (bloq(c)) {
         chip = '<span class="chip bad">BLOQUEADO</span>'; hrs = (sim.estimado ? "~" : "") + fmtN(sim.horasHoje) + " h"; linha = c.bloqueio.motivo;
       } else if (!sim) {
@@ -525,11 +525,11 @@
     var hist = c4.historico.slice().reverse().map(function (h) {
       return '<div class="tl"><b>' + brs(parse(h.d)) + '</b><span>' + esc(h.t) + '</span></div>';
     }).join("");
-    var dias = diff(parse(c4.previsao), today);
-    var prev = dias >= 0 ? 'faltam ' + dias + ' dias' : 'passou há ' + (-dias) + ' dias, confirmar com o fornecedor';
+    var dias = c4.previsao ? diff(parse(c4.previsao), today) : 0;
+    var prev = !c4.previsao ? '' : dias >= 0 ? 'faltam ' + dias + ' dias' : 'passou há ' + (-dias) + ' dias, confirmar com o fornecedor';
     $("#c4Box").innerHTML = c4Plano() + '<div class="grid2"><div class="card"><div class="cmp-top"><h3 style="margin:0">' + esc(D.compressores[3].tag) + '</h3><span class="chip warn">' + esc(c4.status.toUpperCase()) + '</span></div>' +
       '<p class="muted" style="margin-top:10px">' + esc(c4.resumo) + '</p>' +
-      '<div class="note" style="margin:0 0 12px"><b>Mangueira original:</b> faturamento previsto em ' + br(parse(c4.previsao)) + ' (' + prev + ').</div>' +
+      '<div class="note" style="margin:0 0 12px"><b>Mangueira original (garantia):</b> ' + (c4.previsao ? 'faturamento previsto em ' + br(parse(c4.previsao)) + ' (' + prev + ').' : 'sem data de entrega informada pela fábrica.') + '</div>' +
       '<label style="margin-top:14px">Horas por dia (padrão 24, como os outros)<input type="number" min="0" max="24" inputmode="numeric" value="' + (S.c4.horasDia != null ? S.c4.horasDia : D.horasPorDia) + '" data-c4h></label>' +
       '<p class="muted" style="margin-top:6px">Lance a leitura do horímetro em Geral · Ferramentas. Sem leitura e sem horas/dia, não há projeção.</p></div></div>';
   }
