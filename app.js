@@ -122,7 +122,7 @@
   // compressor bloqueado até resolver os achados listados em c.bloqueio.ate
   function bloq(c) { return !!c.bloqueio && c.bloqueio.ate.some(function (id) { var a = achById(id); return a && !achDone(a); }); }
   function algumBloq() { return D.compressores.some(bloq); }
-  function achDone(a) { return a.sit === "feito" || !!S.exec["ach:" + a.id]; }
+  function achDone(a) { return a.sit === "feito" || !!S.exec["ach:" + a.id] || (!!a.pecaId && !!pecaSt(a.pecaId, "ins").done); }
   function achCmp(a) { return a.cmp.split(","); }
   // sem execução registrada: não dá para afirmar que está em dia, então vence hoje
   function rotDue(t, c) { var l = rotLast(t, c); return l ? addDays(l, t.dias) : today; }
@@ -149,9 +149,9 @@
     });
     Object.keys(grp).forEach(function (k) {
       var g = grp[k], tot = g.qs.reduce(function (a, q) { return a + pagarQ(q); }, 0);
-      out.push({ k: "peca", when: g.when, lbl: g.e.id === "rev" ? "Venceu em" : "Até", what: g.e.acao,
+      out.push({ k: "peca", urg: g.qs.some(function (q) { return bloq(cmpById(q.cmp)); }), when: g.when, lbl: g.e.id === "rev" ? "Venceu em" : "Até", what: g.e.acao,
         ids: g.qs.map(function (q) { return q.cmp; }), who: g.e.resp, link: "#pecas",
-        why: g.qs.length + " proposta" + (g.qs.length > 1 ? "s" : "") + " · " + brl(tot) + ". O técnico apontou filtro de ar saturado em 14/08.",
+        why: g.qs.length + " proposta" + (g.qs.length > 1 ? "s" : "") + " · " + brl(tot) + ".",
         act: { t: "peca", ids: g.qs.map(function (q) { return q.id + ":" + g.e.id; }) } });
     });
     // 2) compressor 4
@@ -246,6 +246,7 @@
     }
     // feito
     (D.historico[c.id] || []).forEach(function (h) { pas.push({ d: parse(h.d), t: h.t, k: h.k, f: h.f }); });
+    (D.historicoGeral || []).forEach(function (h) { pas.push({ d: parse(h.d), t: h.t, k: h.k, f: h.f }); });
     if (c.novo) D.c4.historico.forEach(function (h) { pas.push({ d: parse(h.d), t: h.t, k: "obs" }); });
     leituras(c).forEach(function (r) { pas.push({ d: parse(r.data), t: "Leitura do horímetro: " + fmtN(r.horas) + " h", k: "leit" }); });
     (S.log || []).forEach(function (x) { if (x.t.indexOf(tg) >= 0) pas.push({ d: parse(x.d), t: x.t, k: "feito" }); });
@@ -490,7 +491,7 @@
   }
 
   /* ---------- compressor 04 ---------- */
-  function c4St(id) { return ((S.c4.itens || {})[id]) || {}; }
+  function c4St(id) { return ((S.c4.itens || {})[id]) || (D.c4.feitos || {})[id] || {}; }
   // plano de manutenção do C4 (equipamento novo): começa na partida; 1º serviço = A (4000 h ou 1 ano)
   function dataHoras(sim, alvo) {
     if (!sim) return null;

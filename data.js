@@ -48,7 +48,12 @@ window.DATA = {
         { cod: "41027", desc: "Packed filter element", pn: "2901990096", qtd: 1, valor: 2884.11, entrega: 0 },
         { cod: "45827", desc: "Kit de filtro UD430+", pn: "2901207964", qtd: 1, valor: 17408.00, entrega: 15 },
         { cod: "43738", desc: "Dreno automático LD202", pn: "1649800418", qtd: 1, valor: 11581.54, entrega: 15,
-          garantia: true, nota: "Resolvido pela garantia da fábrica e instalado em 21/09/2026. Não entra no valor a pagar." } ] }
+          garantia: true, nota: "Resolvido pela garantia da fábrica e instalado em 21/09/2026. Não entra no valor a pagar." } ] },
+    { id: "980739", cmp: "C2", modelo: "GA110VSD+ BQR144248", emissao: "2026-11-13", validade: "2026-12-13", total: 55130.00,
+      tecnico: "Ventilador do C2 com bobinas abertas (OS 5878, 11/11). O compressor fica bloqueado até a troca.",
+      itens: [
+        { cod: "44721", desc: "Ventilador 380V/460V 60Hz", pn: "1028908421", qtd: 1, valor: 53330.00, entrega: 10 },
+        { cod: "18579", desc: "Mão de obra, hora técnica Atlas Copco", pn: "18579", qtd: 1, valor: 1800.00, entrega: 0 } ] }
   ],
   etapasPeca: [
     { id: "apr", nome: "Aprovar orçamento", acao: "Aprovar as propostas de peças", resp: "Gestor" },
@@ -107,11 +112,15 @@ window.DATA = {
       { d: "2026-06-19", k: "serv", t: "Serviço A (4000 h) feito pela Supertec a 2.635 h: filtros de ar e de óleo, limpeza dos resfriadores. Corretiva: contatos do dreno do secador limpos e voltou a operar; dreno do trocador de calor queimado e Smartbox queimada apontados", f: "Relatório OS 5224" },
       { d: "2026-08-17", k: "peca", t: "Proposta 962997 emitida: dreno automático, kit Smartbox e filtro de ar", f: "Proposta 962997" },
       { d: "2026-11-05", k: "obs", t: "Desarme por temperatura do elemento", f: "Relatório OS 5880" },
+      { d: "2026-11-06", k: "obs", t: "Radiador muito sujo", f: "Chat Casa de Força" },
       { d: "2026-11-11", k: "corr", t: "Trocados filtro de ar, dreno automático do trocador de calor e Smartbox; antena conectada à rede. Deixado em operação, a 108 °C com ambiente de 40 °C", f: "OS 5880" }
     ],
     C2: [
       { d: "2026-06-19", k: "serv", t: "Serviço A (4000 h) feito pela Supertec a 3.335 h: filtros de ar e de óleo, limpeza dos resfriadores. Corretiva: disjuntor geral desarmava acima de 95%, então a rotação máxima foi limitada a 90%; O-ring da mangueira de descarga vedado com silicone", f: "Relatório OS 5276" },
       { d: "2026-08-17", k: "peca", t: "Proposta 962998 emitida: filtro de ar", f: "Proposta 962998" },
+      { d: "2026-11-05", k: "obs", t: "Desarmes por temperatura do elemento; saiu do sistema para esfriar", f: "Chat Casa de Força" },
+      { d: "2026-11-06", k: "obs", t: "Radiador muito sujo; limpeza geral feita e óleo completado, mas continuou desarmando. Filtro de ar encharcado de óleo (puxou óleo por causa dos desarmes)", f: "Chat Casa de Força" },
+      { d: "2026-11-09", k: "obs", t: "Mais de 12 desarmes por temperatura no dia, vistos no monitoramento da Supertec", f: "Chat Casa de Força" },
       { d: "2026-11-10", k: "corr", t: "Desarme por temperatura do elemento (120 °C). Ventilador com bobinas abertas, mangueira de descarga retirada e instalada no C4. Deixado bloqueado e fora de operação. Filtro de ar trocado", f: "OS 5878" }
     ],
     C3: [
@@ -123,6 +132,11 @@ window.DATA = {
     ],
     C4: []   // o histórico do C4 vem de c4.historico
   },
+  // Eventos que valem para todos os compressores em operação (Casa de Força, turno B)
+  historicoGeral: [
+    { d: "2026-11-05", k: "obs", t: "Por causa da fase 2, o set point subiu de 5,8 para 7,0 bar e passou a ser necessário ligar três compressores", f: "Chat Casa de Força" },
+    { d: "2026-11-10", k: "obs", t: "Set point deixado em 6,5 bar, com os compressores 1, 3 e 4 no sistema", f: "Relatório do turno B" }
+  ],
 
   // Achados do relatório de 4000 h (jun/2026) e das OS 2026/2789 e 2026/3689.
   // sit: "peca" = já está numa proposta de peças · "cotar" = falta pedir cotação · "cliente" = ação da RRP · "feito" = resolvido
@@ -130,9 +144,10 @@ window.DATA = {
   bloqueioDesde: "2026-11-10",   // desde a visita, C2 parado: a projeção põe C1 e C3 ligados direto
   pecasExec: { "962997": "2026-11-11", "962998": "2026-11-11", "962489": "2026-11-11" },
   achados: [
-    { id: "c2vt", cmp: "C2", urg: true, t: "Ventilador principal com bobinas abertas; o compressor desarmou por temperatura do elemento (120 °C) e foi deixado BLOQUEADO e fora de operação (OS 5878, 11/11)", sit: "cotar", resp: "Supertec", acao: "Pedir cotação e prazo do ventilador do C2 (compressor parado)" },
+    { id: "c2vt", cmp: "C2", urg: true, t: "Ventilador principal com bobinas abertas; o compressor desarmou por temperatura (120 °C) e está BLOQUEADO e fora de operação desde 11/11 (OS 5878)", sit: "peca", pecaId: "980739", ref: "proposta 980739: R$ 55.130, entrega em 10 dias, válida até 13/12/2026. Aguarda aprovação, pedido e instalação" },
     { id: "c2mg", cmp: "C2", t: "A mangueira de descarga do C2 foi retirada e instalada no compressor 04. O C2 está sem ela", sit: "cotar", resp: "Supertec", acao: "Definir como o C2 recebe mangueira de descarga (a do C2 está no C4) e trocar o O-ring" },
-    { id: "tmp",  cmp: "C1,C2", t: "Desarmes por temperatura do elemento: C1 em 05/11 (trabalhando a 108 °C com ambiente de 40 °C) e C2 em 10/11 (120 °C). Resfriadores e ar sujos", sit: "cliente", resp: "Manutenção", ref: "a limpeza trimestral dos resfriadores está atrasada" },
+    { id: "q15", cmp: "C4", t: "O C4 desarmou por sobrecarga do ventilador (11/11). O ajuste do relé Q15 estava em 5 A e foi para 6 A; o manual pede 8,0 A", sit: "cliente", resp: "Elétrica / Supertec", acao: "Conferir e ajustar o relé Q15 do ventilador do C4 para 8,0 A conforme o manual" },
+    { id: "tmp",  cmp: "C1,C2", t: "Desarmes por temperatura do elemento: C1 em 05/11 (trabalhando a 108 °C com ambiente de 40 °C) e C2 em 10/11 (120 °C). Resfriadores e ar sujos", sit: "cliente", resp: "Manutenção", ref: "em 06/11 o radiador do C1 e do C2 estava muito sujo; a limpeza trimestral está atrasada" },
     { id: "c1sb", cmp: "C1", t: "Smartbox queimada e dreno automático do trocador de calor queimado", sit: "feito", ref: "trocados em 11/11/2026 (OS 5880); antena Smartbox conectada à rede" },
     { id: "c2dj", cmp: "C2", t: "Disjuntor geral desarmava acima de 95% de rotação. A Supertec limitou a rotação máxima a 90% e recomendou trocar o disjuntor imediatamente", sit: "cliente", resp: "Elétrica", acao: "Trocar o disjuntor geral e devolver a rotação máxima a 100%" },
     { id: "c3sp", cmp: "C3", t: "Defletor de óleo com emenda solta e trincas; chapa de inox solta dentro do reservatório pode ter danificado o filtro separador. Houve arraste de óleo. O defletor foi soldado pelo cliente. A Supertec recomendou trocar defletor e separador e usar o C3 em stand-by até a troca", sit: "cotar", resp: "Supertec", acao: "Pedir cotação do filtro separador e do defletor de óleo do C3" },
@@ -178,9 +193,10 @@ window.DATA = {
 
   // Situação do compressor 04 (fonte: grupo com o fornecedor, até 03/11/2026)
   c4: {
-    status: "Stand-by · não operar como principal",
-    resumo: "Funciona com reparo provisório (testado a 100% em 29/10), mas não deve ser o principal até trocar a mangueira de descarga. A peça de garantia veio errada; a certa tem faturamento previsto em 13/11.",
+    status: "Em operação com mangueira provisória",
+    resumo: "Colocado no sistema depois de 05/11, com a mangueira de descarga provisória (a Supertec confirmou que pode operar com acompanhamento constante). Em 11/11 a Supertec instalou nele a mangueira de descarga do C2. A mangueira original da garantia tinha faturamento previsto para 13/11.",
     previsao: "2026-11-13",
+    feitos: { lib: { done: true, date: "" } },   // em operação desde antes de 10/11 (chat da Casa de Força); data exata a confirmar
     pendencias: [
       { id: "mang",  nome: "Receber a mangueira de descarga original (garantia)", resp: "Fábrica / Supertec", nota: "Faturamento previsto em 13/11. A primeira enviada pela fábrica veio errada." },
       { id: "supo",  nome: "Receber o suporte do motor e elemento definitivo (garantia)", resp: "Fábrica / Supertec", nota: "Hoje está com reparo paliativo (soldado)." },
@@ -197,6 +213,9 @@ window.DATA = {
       { d: "2026-10-27", t: "Reparo por solda da mangueira não resolveu; vai usar a peça de garantia." },
       { d: "2026-10-29", t: "Montado com mangueira prensada. Teste a 100% de carga sem falhas. Fica em stand-by e bloqueado." },
       { d: "2026-11-03", t: "Mangueira enviada pela fábrica era a errada. Nova previsão de faturamento: 13/11." },
+      { d: "2026-11-05", t: "Supertec: pode colocar no sistema, mas com acompanhamento constante. Por causa da fase 2 foi preciso ligar os três compressores" },
+      { d: "2026-11-10", t: "Em operação: o filtro de ar dele foi emprestado ao C2 para teste" },
+      { d: "2026-11-11", t: "Desarmou por sobrecarga do ventilador; relé Q15 estava em 5 A (manual: 8,0 A) e foi ajustado para 6 A" },
       { d: "2026-11-11", t: "A Supertec retirou a mangueira de descarga do C2 e a instalou no C4 (OS 5878). Confirmar com a Supertec se o C4 já pode operar e o que falta." }
     ]
   },
