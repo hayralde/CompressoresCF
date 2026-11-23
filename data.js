@@ -104,7 +104,7 @@ window.DATA = {
   // fonte "Manual" = vem do manual; "Plano" = definição do PCM (ajustável).
   inicioPlano: "2026-11-04",
   // Execuções comprovadas pelos relatórios de 4000 h (limpeza dos resfriadores: "Realizado" em 19/06/2026 nos 3 compressores).
-  execInicial: { "tri:C1": "2026-06-19", "tri:C2": "2026-06-19", "tri:C3": "2026-06-19" },
+  execInicial: { "tri:C1": "2026-11-12", "tri:C2": "2026-11-12", "tri:C3": "2026-11-12" },   // limpeza dos resfriadores pela Climavolts em 12/11/2026 (informado pelo PCM); antes: 19/06
 
   // Linha do tempo: o que foi executado, por compressor. k: serv = serviço preventivo, corr = corretiva, os = OS/inspeção, peca = proposta de peças, obs = observação.
   historico: {
@@ -113,7 +113,8 @@ window.DATA = {
       { d: "2026-08-17", k: "peca", t: "Proposta 962997 emitida: dreno automático, kit Smartbox e filtro de ar", f: "Proposta 962997" },
       { d: "2026-11-05", k: "obs", t: "Desarme por temperatura do elemento", f: "Relatório OS 5880" },
       { d: "2026-11-06", k: "obs", t: "Radiador muito sujo", f: "Chat Casa de Força" },
-      { d: "2026-11-11", k: "corr", t: "Trocados filtro de ar, dreno automático do trocador de calor e Smartbox; antena conectada à rede. Deixado em operação, a 108 °C com ambiente de 40 °C", f: "OS 5880" }
+      { d: "2026-11-11", k: "corr", t: "Trocados filtro de ar, dreno automático do trocador de calor e Smartbox; antena conectada à rede. Deixado em operação, a 108 °C com ambiente de 40 °C", f: "OS 5880" },
+      { d: "2026-11-12", k: "serv", t: "Limpeza dos resfriadores pela empresa Climavolts", f: "Informado pelo PCM" }
     ],
     C2: [
       { d: "2026-06-19", k: "serv", t: "Serviço A (4000 h) feito pela Supertec a 3.335 h: filtros de ar e de óleo, limpeza dos resfriadores. Corretiva: disjuntor geral desarmava acima de 95%, então a rotação máxima foi limitada a 90%; O-ring da mangueira de descarga vedado com silicone", f: "Relatório OS 5276" },
@@ -121,14 +122,16 @@ window.DATA = {
       { d: "2026-11-05", k: "obs", t: "Desarmes por temperatura do elemento; saiu do sistema para esfriar", f: "Chat Casa de Força" },
       { d: "2026-11-06", k: "obs", t: "Radiador muito sujo; limpeza geral feita e óleo completado, mas continuou desarmando. Filtro de ar encharcado de óleo (puxou óleo por causa dos desarmes)", f: "Chat Casa de Força" },
       { d: "2026-11-09", k: "obs", t: "Mais de 12 desarmes por temperatura no dia, vistos no monitoramento da Supertec", f: "Chat Casa de Força" },
-      { d: "2026-11-10", k: "corr", t: "Desarme por temperatura do elemento (120 °C). Ventilador com bobinas abertas, mangueira de descarga retirada e instalada no C4. Deixado bloqueado e fora de operação. Filtro de ar trocado", f: "OS 5878" }
+      { d: "2026-11-10", k: "corr", t: "Desarme por temperatura do elemento (120 °C). Ventilador com bobinas abertas, mangueira de descarga retirada e instalada no C4. Deixado bloqueado e fora de operação. Filtro de ar trocado", f: "OS 5878" },
+      { d: "2026-11-12", k: "serv", t: "Limpeza dos resfriadores pela empresa Climavolts", f: "Informado pelo PCM" }
     ],
     C3: [
       { d: "2026-06-19", k: "corr", t: "Visita corretiva (não foi o Serviço A): defletor de óleo solto e trincado, chapa de inox solta no reservatório, arraste de óleo. Defletor soldado pelo cliente; Supertec recomendou trocar separador e defletor. Filtro coalescente saturado e dreno queimado apontados", f: "Relatório OS 5223" },
       { d: "2026-08-13", k: "peca", t: "Proposta 962489 emitida: filtro de ar, kit UD430+ e dreno (garantia)", f: "Proposta 962489" },
       { d: "2026-08-14", k: "os", t: "Inspeção: filtro de ar saturado por desarme; recomendado não operar até a troca", f: "OS 2026/2789" },
       { d: "2026-09-21", k: "corr", t: "Dreno automático do secador trocado (garantia)", f: "OS 2026/3689" },
-      { d: "2026-11-11", k: "corr", t: "Trocados filtro de ar e filtro coalescente. Deixado em operação", f: "OS 5881" }
+      { d: "2026-11-11", k: "corr", t: "Trocados filtro de ar e filtro coalescente. Deixado em operação", f: "OS 5881" },
+      { d: "2026-11-12", k: "serv", t: "Limpeza dos resfriadores pela empresa Climavolts", f: "Informado pelo PCM" }
     ],
     C4: []   // o histórico do C4 vem de c4.historico
   },
@@ -147,7 +150,7 @@ window.DATA = {
     { id: "c2vt", cmp: "C2", urg: true, t: "Ventilador principal com bobinas abertas; o compressor desarmou por temperatura (120 °C) e está BLOQUEADO e fora de operação desde 11/11 (OS 5878)", sit: "peca", pecaId: "980739", ref: "proposta 980739: R$ 55.130, entrega em 10 dias, válida até 13/12/2026. Aguarda aprovação, pedido e instalação" },
     { id: "c2mg", cmp: "C2", t: "A mangueira de descarga do C2 foi retirada e instalada no compressor 04. O C2 está sem ela", sit: "cotar", resp: "Supertec", acao: "Mangueira do C2 está no C4. A da garantia (fábrica) ainda não tem data; definir com a Supertec se o C2 recebe mangueira nova ou a devolvida, e trocar o O-ring" },
     { id: "q15", cmp: "C4", t: "O C4 desarmou por sobrecarga do ventilador (11/11). O ajuste do relé Q15 estava em 5 A e foi para 6 A; o manual pede 8,0 A", sit: "feito", ref: "disjuntor motor ajustado conforme o manual (8,0 A), informado pelo PCM; resolve o problema. Data do ajuste não informada" },
-    { id: "tmp",  cmp: "C1,C2", t: "Desarmes por temperatura do elemento: C1 em 05/11 (trabalhando a 108 °C com ambiente de 40 °C) e C2 em 10/11 (120 °C). Resfriadores e ar sujos", sit: "feito", ref: "limpeza executada pela Climavolts (informado pelo PCM; data não informada). Em 06/11 o radiador do C1 e do C2 estava muito sujo" },
+    { id: "tmp",  cmp: "C1,C2", t: "Desarmes por temperatura do elemento: C1 em 05/11 (trabalhando a 108 °C com ambiente de 40 °C) e C2 em 10/11 (120 °C). Resfriadores e ar sujos", sit: "feito", ref: "limpeza executada pela Climavolts em 12/11/2026 no C1, C2 e C3 (informado pelo PCM). Em 06/11 o radiador do C1 e do C2 estava muito sujo" },
     { id: "c1sb", cmp: "C1", t: "Smartbox queimada e dreno automático do trocador de calor queimado", sit: "feito", ref: "trocados em 11/11/2026 (OS 5880); antena Smartbox conectada à rede" },
     { id: "c2dj", cmp: "C2", t: "Disjuntor geral desarmava acima de 95% de rotação. A Supertec limitou a rotação máxima a 90% e recomendou trocar o disjuntor imediatamente", sit: "feito", ref: "disjuntor de alimentação substituído e problema resolvido (informado pelo PCM; data não informada). Falta confirmar se a rotação máxima voltou a 100%" },
     { id: "c3sp", cmp: "C3", t: "Defletor de óleo com emenda solta e trincas; chapa de inox solta dentro do reservatório pode ter danificado o filtro separador. Houve arraste de óleo. O defletor foi soldado pelo cliente. A Supertec recomendou trocar defletor e separador e usar o C3 em stand-by até a troca", sit: "feito", ref: "filtro separador substituído; o defletor de óleo foi fornecido em garantia. C3 já voltou a operar (informado pelo PCM; datas não informadas)" },
