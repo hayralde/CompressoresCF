@@ -89,62 +89,6 @@
     </div>
   </details>
 
-  <details id="ferramentas" class="blk">
-    <summary><span>Ferramentas</span><b class="bdg">leitura · orçamento · agenda · backup</b></summary>
-    <div class="blk-b">
-      <div class="grid2">
-        <div class="card">
-          <h3>Lançar leitura do horímetro</h3>
-          <form id="formLeitura" class="form">
-            <label>Compressor
-              <select id="lCmp"></select>
-            </label>
-            <label>Data
-              <input type="date" id="lData" required>
-            </label>
-            <label>Horas em funcionamento
-              <input type="number" id="lHoras" min="0" step="1" inputmode="numeric" required>
-            </label>
-            <label>Horas em carga <span class="opt">(opcional)</span>
-              <input type="number" id="lCarga" min="0" step="1" inputmode="numeric">
-            </label>
-            <label>Partidas <span class="opt">(opcional)</span>
-              <input type="number" id="lPart" min="0" step="1" inputmode="numeric">
-            </label>
-            <button class="btn" type="submit">Salvar leitura</button>
-            <p id="lMsg" class="msg" role="status"></p>
-          </form>
-          <div id="listaLeituras"></div>
-        </div>
-
-        <div class="card">
-          <h3>Pedir orçamento da revisão</h3>
-          <textarea id="msg" rows="11" readonly></textarea>
-          <div class="btns">
-            <button class="btn" id="btnCopiar">Copiar texto</button>
-            <a class="btn ghost" id="btnZap" target="_blank" rel="noopener">Enviar por WhatsApp</a>
-          </div>
-          <hr>
-          <h3>Lembretes no celular</h3>
-          <p class="muted">Baixe e abra o arquivo para colocar os prazos na agenda, com aviso 3 dias antes.</p>
-          <div class="btns">
-            <button class="btn ghost" id="btnIcs">Baixar agenda (.ics)</button>
-          </div>
-          <hr>
-          <h3>Registro do que foi feito</h3>
-          <div id="historico"></div>
-          <hr>
-          <h3>Backup</h3>
-          <p class="muted">O que você marca fica salvo só neste aparelho. Exporte para levar a outro.</p>
-          <div class="btns">
-            <button class="btn ghost" id="btnExp">Exportar</button>
-            <label class="btn ghost file">Importar<input type="file" id="fileImp" accept="application/json" hidden></label>
-          </div>
-        </div>
-      </div>
-    </div>
-  </details>
-
   </div>
 
 </main>

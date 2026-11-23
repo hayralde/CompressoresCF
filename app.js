@@ -183,7 +183,7 @@
       var ids = cs.filter(function (c) { return diff(due[c.id], min) <= 0; }).map(function (c) { return c.id; });
       out.push({ k: "rot", when: min, lbl: "Até", what: t.acao, ids: ids, who: t.resp, link: "#plano",
         why: t.per + ". Registro: " + t.reg + "." + (rotSem(t) ? " Sem execução registrada: se já foi feito, marque Feito para começar a contar daqui." : ""),
-        act: t.tipo === "leitura" ? { t: "link", href: "#ferramentas", label: "Lançar leitura" } : { t: "rot", keys: ids.map(function (id) { return t.id + ":" + id; }) } });
+        act: { t: "rot", keys: ids.map(function (id) { return t.id + ":" + id; }) } });
     });
     // 5) próxima troca do rodízio
     for (i = 1; i < D.rodizio.length; i++) {
@@ -531,7 +531,7 @@
       '<p class="muted" style="margin-top:10px">' + esc(c4.resumo) + '</p>' +
       '<div class="note" style="margin:0 0 12px"><b>Mangueira original (garantia):</b> ' + (c4.previsao ? 'faturamento previsto em ' + br(parse(c4.previsao)) + ' (' + prev + ').' : 'sem data de entrega informada pela fábrica.') + '</div>' +
       '<label style="margin-top:14px">Horas por dia (padrão 24, como os outros)<input type="number" min="0" max="24" inputmode="numeric" value="' + (S.c4.horasDia != null ? S.c4.horasDia : D.horasPorDia) + '" data-c4h></label>' +
-      '<p class="muted" style="margin-top:6px">Lance a leitura do horímetro em Geral · Ferramentas. Sem leitura e sem horas/dia, não há projeção.</p></div></div>';
+      '<p class="muted" style="margin-top:6px">Sem leitura do horímetro, a projeção parte de 0 h na data da partida.</p></div></div>';
   }
 
   /* ---------- gráfico ---------- */
@@ -589,67 +589,6 @@
     $("#btnPassadas").textContent = mostrarPassadas ? "Ocultar semanas passadas" : "Mostrar semanas passadas";
   }
 
-  /* ---------- ferramentas ---------- */
-  function renderForm() {
-    $("#lCmp").innerHTML = D.compressores.map(function (c) { return '<option value="' + c.id + '">' + esc(c.tag) + '</option>'; }).join("");
-    if (!$("#lData").value) $("#lData").value = iso(today);
-    renderLista();
-  }
-  function renderLista() {
-    var out = [];
-    Object.keys(S.leituras).forEach(function (id) {
-      var c = D.compressores.filter(function (x) { return x.id === id; })[0];
-      (S.leituras[id] || []).forEach(function (r, i) { out.push({ id: id, tag: c ? c.tag : id, r: r, i: i }); });
-    });
-    out.sort(function (a, b) { return a.r.data < b.r.data ? 1 : -1; });
-    $("#listaLeituras").innerHTML = out.length ? '<div class="lst">' + out.slice(0, 8).map(function (o) {
-      return '<div><span>' + esc(o.tag.replace("CPS-", "")) + ' · ' + br(parse(o.r.data)) + ' · <b>' + fmtN(o.r.horas) + ' h</b></span><button data-del="' + o.id + ':' + o.i + '" aria-label="Remover leitura">remover</button></div>';
-    }).join("") + '</div>' : '';
-  }
-  function textoOrcamento() {
-    var ativos = INF.filter(function (i) { return i.sim && i.sim.data8000; });
-    var linhas = ativos.map(function (i) {
-      return '• ' + i.c.tag + ' — ' + fmtN(i.sim.horasHoje) + ' h' + (i.sim.estimado ? ' (est. hoje)' : '') + ' — 8000 h previstas em ' + br(i.sim.data8000);
-    }).join("\n");
-    var primeira = ativos.length ? ativos.map(function (i) { return i.sim.data8000; }).sort(function (a, b) { return a - b; })[0] : null;
-    var prazoResp = primeira ? br(addDays(primeira, -60)) : "—";
-    return "Prezados, bom dia.\n\nSolicitamos orçamento para a REVISÃO PREVENTIVA DE 8000 HORAS dos compressores da Casa de Força:\n\n" + linhas +
-      (INF.some(function (i) { return i.c.novo && !(i.sim && i.sim.data8000); }) ? "\n• CPS-14Q004 — equipamento novo em stand-by (aguardando peças de garantia); incluir no plano após liberação\n" : "\n") +
-      "\nPor favor informar: escopo detalhado, peças e consumíveis, mão de obra, prazo de mobilização, validade da proposta e condições de pagamento.\n\nResposta até " + prazoResp + ".\n\nObrigado.";
-  }
-  function renderMsg() {
-    var t = textoOrcamento();
-    $("#msg").value = t;
-    $("#btnZap").href = "https://wa.me/?text=" + encodeURIComponent(t);
-  }
-  function ics() {
-    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Compressores Casa de Forca//PT", "CALSCALE:GREGORIAN"];
-    INF.forEach(function (inf) {
-      var p = prazos(inf);
-      if (!p) return;
-      p.forEach(function (x) {
-        if (x.st.done) return;
-        var d = x.dl, e = addDays(d, 1), f = function (z) { return iso(z).replace(/-/g, ""); };
-        L.push("BEGIN:VEVENT", "UID:" + inf.c.id + "-" + x.e.id + "@compressores-cf", "DTSTAMP:" + f(today) + "T000000Z",
-          "DTSTART;VALUE=DATE:" + f(d), "DTEND;VALUE=DATE:" + f(e),
-          "SUMMARY:[" + inf.c.tag + "] " + x.e.nome, "DESCRIPTION:" + x.e.dica.replace(/[,;]/g, " ") + " Responsável: " + x.e.resp,
-          "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Prazo em 3 dias", "TRIGGER:-P3D", "END:VALARM", "END:VEVENT");
-      });
-    });
-    L.push("END:VCALENDAR");
-    return L.join("\r\n");
-  }
-  function baixar(nome, texto, tipo) {
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([texto], { type: tipo }));
-    a.download = nome; document.body.appendChild(a); a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-  }
-
-  function renderHist() {
-    var l = S.log || [];
-    $("#historico").innerHTML = l.length ? '<div class="lst">' + l.slice(0, 10).map(function (x) { return '<div><span>' + br(parse(x.d)) + ' · ' + esc(x.t) + '</span></div>'; }).join("") + '</div>' : '<p class="muted">Nada registrado ainda. Ao tocar em "Feito", a ação aparece aqui com a data.</p>';
-  }
   function doAct(it) {
     var a = it.act, d = iso(today);
     if (a.t === "peca") a.ids.forEach(function (x) { var p = x.split(":"); setPeca(p[0], p[1], { done: true, date: d }); });
@@ -682,7 +621,7 @@
   function renderAll() {
     INF = info();
     renderHoje(); renderTopo(); renderEstado(); renderPlano(); renderPecas(); renderAchados(); renderC4();
-    renderTabs(); renderEtapas(); renderChart(); renderRod(); renderForm(); renderMsg(); renderHist(); renderBadges();
+    renderTabs(); renderEtapas(); renderChart(); renderRod(); renderBadges();
   }
 
   document.addEventListener("click", function (e) {
@@ -701,7 +640,7 @@
     else if (t.dataset.chk) {
       var cur = etapaState(tabSel, t.dataset.chk);
       setEtapa(tabSel, t.dataset.chk, { done: !cur.done, date: !cur.done ? iso(today) : null });
-      renderTopo(); renderEtapas(); renderMsg(); renderBadges();
+      renderTopo(); renderEtapas(); renderBadges();
     } else if (t.dataset.del) {
       var p = t.dataset.del.split(":");
       (S.leituras[p[0]] || []).splice(+p[1], 1); save(); renderAll();
@@ -722,39 +661,7 @@
       S.c4.start = e.target.querySelector("input").value; save(); renderAll();
     }
   });
-  $("#formLeitura").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var id = $("#lCmp").value, data = $("#lData").value, h = +$("#lHoras").value, msg = $("#lMsg");
-    var c = D.compressores.filter(function (x) { return x.id === id; })[0];
-    var ant = leituras(c).filter(function (r) { return r.data <= data; }).pop();
-    if (ant && h < ant.horas) { msg.className = "msg err"; msg.textContent = "Leitura menor que a anterior (" + fmtN(ant.horas) + " h em " + br(parse(ant.data)) + "). Confira o valor."; return; }
-    var r = { data: data, horas: h };
-    if ($("#lCarga").value) r.carga = +$("#lCarga").value;
-    if ($("#lPart").value) r.partidas = +$("#lPart").value;
-    (S.leituras[id] = S.leituras[id] || []).push(r); save();
-    $("#lHoras").value = $("#lCarga").value = $("#lPart").value = "";
-    renderAll();
-    $("#lMsg").className = "msg okm"; $("#lMsg").textContent = "Leitura salva. Projeção atualizada.";
-  });
   $("#btnPassadas").addEventListener("click", function () { mostrarPassadas = !mostrarPassadas; renderRod(); });
-  $("#btnCopiar").addEventListener("click", function () {
-    var b = $("#btnCopiar"), t = $("#msg").value;
-    var ok = function () { b.textContent = "Copiado ✓"; setTimeout(function () { b.textContent = "Copiar texto"; }, 1800); };
-    if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, function () { $("#msg").select(); document.execCommand("copy"); ok(); });
-    else { $("#msg").select(); document.execCommand("copy"); ok(); }
-  });
-  $("#btnIcs").addEventListener("click", function () { baixar("manutencao-compressores.ics", ics(), "text/calendar"); });
-  $("#btnExp").addEventListener("click", function () { baixar("backup-compressores-" + iso(today) + ".json", JSON.stringify(S, null, 2), "application/json"); });
-  $("#fileImp").addEventListener("change", function (e) {
-    var f = e.target.files[0]; if (!f) return;
-    var r = new FileReader();
-    r.onload = function () {
-      try { var o = JSON.parse(r.result); if (typeof o !== "object" || !o) throw 0; S = Object.assign(blank(), o); save(); renderAll(); alert("Backup importado."); }
-      catch (x) { alert("Arquivo inválido."); }
-    };
-    r.readAsText(f);
-  });
-
   renderAll();
   abrir(location.hash);
 })();
