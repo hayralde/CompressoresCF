@@ -196,7 +196,8 @@ window.DATA = {
     status: "Em operação com mangueira provisória",
     resumo: "Colocado no sistema depois de 05/11, com a mangueira de descarga provisória (a Supertec confirmou que pode operar com acompanhamento constante). Em 11/11 a Supertec instalou nele a mangueira de descarga do C2. A mangueira original da garantia tinha faturamento previsto para 13/11.",
     previsao: "2026-11-13",
-    feitos: { lib: { done: true, date: "" } },   // em operação desde antes de 10/11 (chat da Casa de Força); data exata a confirmar
+    inicio: "2026-11-06",   // entrada em operação, informada pelo PCM
+    feitos: { lib: { done: true, date: "2026-11-06" } },
     pendencias: [
       { id: "mang",  nome: "Receber a mangueira de descarga original (garantia)", resp: "Fábrica / Supertec", nota: "Faturamento previsto em 13/11. A primeira enviada pela fábrica veio errada." },
       { id: "supo",  nome: "Receber o suporte do motor e elemento definitivo (garantia)", resp: "Fábrica / Supertec", nota: "Hoje está com reparo paliativo (soldado)." },

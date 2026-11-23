@@ -28,7 +28,8 @@
   function leituras(c) {
     var extra = S.leituras[c.id] || [];
     var all = c.leituras.concat(extra).slice().sort(function (a, b) { return a.data < b.data ? -1 : 1; });
-    if (c.novo && S.c4.start && !all.length) all = [{ data: S.c4.start, horas: 0 }];
+    var st4 = S.c4.start || D.c4.inicio;
+    if (c.novo && st4 && !all.length) all = [{ data: st4, horas: 0 }];
     return all;
   }
   function last(c) { var l = leituras(c); return l.length ? l[l.length - 1] : null; }
@@ -240,7 +241,7 @@
         if (s.done) pas.push({ d: s.date ? parse(s.date) : today, t: pd.nome, k: "c4" });
         else fut.push({ d: pd.id === "mang" ? parse(D.c4.previsao) : today, t: pd.nome, who: pd.resp, k: "c4", chk: pd.id });
       });
-      var st = S.c4.start, sim = inf.sim, dh = dataHoras(sim, 4000), lim = st ? (function () { var d = parse(st); return new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()); })() : null;
+      var st = S.c4.start || D.c4.inicio, sim = inf.sim, dh = dataHoras(sim, 4000), lim = st ? (function () { var d = parse(st); return new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()); })() : null;
       var prim = [dh, lim].filter(Boolean).sort(function (a, b) { return a - b; })[0];
       fut.push({ d: prim || null, t: "Primeiro serviço: Serviço A (4.000 h ou 1 ano da partida)" + (prim ? "" : ". Sem data até informar a partida e as horas por dia"), who: "Supertec", k: "serv", marco: true });
     }
@@ -499,7 +500,7 @@
     return null;
   }
   function c4Plano() {
-    var inf = INF.filter(function (i) { return i.c.novo; })[0], sim = inf && inf.sim, M = D.manual, st = S.c4.start || "";
+    var inf = INF.filter(function (i) { return i.c.novo; })[0], sim = inf && inf.sim, M = D.manual, st = S.c4.start || D.c4.inicio || "";
     var linhas = M.servicos.filter(function (s) { return s.id !== "D"; }).map(function (s, k) {
       var anos = parseInt(s.tempo, 10), lim = st ? (function () { var d = parse(st); return new Date(d.getFullYear() + anos, d.getMonth(), d.getDate()); })() : null;
       var dh = dataHoras(sim, s.horas), h = sim ? sim.horasHoje : null, partes = [];
