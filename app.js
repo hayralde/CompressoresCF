@@ -41,7 +41,7 @@
     return null;
   }
   function rate(c, d) {
-    if (c.novo) return +(S.c4.horasDia || 0);
+    if (c.novo) return S.c4.horasDia != null && S.c4.horasDia !== "" ? +S.c4.horasDia : D.horasPorDia;
     if (d > parse(D.bloqueioDesde || "2026-11-10") && algumBloq()) return bloq(c) ? 0 : D.horasPorDia;
     var w = weekFor(d);
     if (!w) return d > parse(D.rodizio[D.rodizio.length - 1].fim) ? D.horasPorDia : 0;
@@ -530,7 +530,7 @@
     $("#c4Box").innerHTML = c4Plano() + '<div class="grid2"><div class="card"><div class="cmp-top"><h3 style="margin:0">' + esc(D.compressores[3].tag) + '</h3><span class="chip warn">' + esc(c4.status.toUpperCase()) + '</span></div>' +
       '<p class="muted" style="margin-top:10px">' + esc(c4.resumo) + '</p>' +
       '<div class="note" style="margin:0 0 12px"><b>Mangueira original:</b> faturamento previsto em ' + br(parse(c4.previsao)) + ' (' + prev + ').</div>' +
-      '<label style="margin-top:14px">Horas por dia previstas (para projeção, depois de liberado)<input type="number" min="0" max="24" inputmode="numeric" value="' + (S.c4.horasDia || 0) + '" data-c4h></label>' +
+      '<label style="margin-top:14px">Horas por dia (padrão 24, como os outros)<input type="number" min="0" max="24" inputmode="numeric" value="' + (S.c4.horasDia != null ? S.c4.horasDia : D.horasPorDia) + '" data-c4h></label>' +
       '<p class="muted" style="margin-top:6px">Lance a leitura do horímetro em Geral · Ferramentas. Sem leitura e sem horas/dia, não há projeção.</p></div></div>';
   }
 
