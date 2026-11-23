@@ -154,7 +154,7 @@ window.DATA = {
     { id: "c3co", cmp: "C3", t: "Filtro coalescente saturado por causa do arraste de óleo", sit: "feito", ref: "filtro coalescente trocado em 11/11/2026 (OS 5881). Confirmar com a Supertec se é o kit UD430+ da proposta" },
     { id: "c3dr", cmp: "C3", t: "Dreno automático do secador queimado", sit: "feito", ref: "trocado em 21/09/2026 (OS 2026/3689, garantia)" },
     { id: "ar",   cmp: "C1,C2,C3", t: "Filtro de ar saturado (14/08 o técnico recomendou não operar o C3 até a troca)", sit: "feito", ref: "trocado nos três em 11/11/2026 (OS 5878, 5880 e 5881)" },
-    { id: "cub",  cmp: "C1,C2,C3", t: "Filtro do compartimento elétrico saturado em junho. O relatório não registra a troca", sit: "cotar", resp: "Supertec", acao: "Confirmar a troca do filtro do compartimento elétrico (item do Serviço A)" },
+    { id: "cub",  cmp: "C1,C2,C3", t: "Filtro do compartimento elétrico saturado em junho. O relatório não registra a troca", sit: "cotar", resp: "Supertec", acao: "Trocar o filtro do compartimento elétrico (item do Serviço A). Confirmado pelo PCM que ainda não foi resolvido: pedir cotação à Supertec" },
     { id: "pod",  cmp: "C1,C2,C3", t: "Qualidade do ar aspirado: poluído, em todos. O manual manda encurtar as limpezas em ambiente com poeira", sit: "cliente", resp: "Manutenção" }
   ],
   responsavelPlano: "PCM",
